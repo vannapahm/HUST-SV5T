@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Download, ExternalLink, Calendar, MapPin, Building2, User, Award, ArrowLeft, Filter, Trash2, Globe, Lock, KeyRound, PlusCircle, X } from 'lucide-react';
 import Link from 'next/link';
+import { CRITERIA_TREE } from "@/data/criteria";
 
 interface Proposal {
     id: string;
@@ -67,6 +68,7 @@ export default function SummaryPage() {
     // Form dữ liệu hoạt động chính thức
     const [officialForm, setOfficialForm] = useState({
         title: '',
+        criteria_detail: '',
         organizer: '',
         target_standard: 'DAO_DUC',
         target_levels: ['DAI_HOC'],
@@ -83,7 +85,7 @@ export default function SummaryPage() {
     // Hàm xử lý lưu hoạt động chính thức thẳng vào bảng activities
     const handleCreateOfficialActivity = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!officialForm.title || !officialForm.organizer || !officialForm.start_date) {
+        if (!officialForm.title || !officialForm.organizer || !officialForm.start_date || !officialForm.criteria_detail) {
             alert('Vui lòng điền đầy đủ các thông tin bắt buộc (*)');
             return;
         }
@@ -103,6 +105,7 @@ export default function SummaryPage() {
                 location: officialForm.location,
                 proof_method: officialForm.proof_method,
                 supported_standard: officialForm.target_standard,
+                criteria_detail: officialForm.criteria_detail, // Lưu tiêu chí cụ thể
                 target_levels: officialForm.target_levels,
                 // Không có proposal_id vì đây là hoạt động đăng trực tiếp
             },
@@ -118,6 +121,7 @@ export default function SummaryPage() {
             // Reset form
             setOfficialForm({
                 title: '',
+                criteria_detail: '',
                 organizer: '',
                 target_standard: 'DAO_DUC',
                 target_levels: ['DAI_HOC'],
@@ -340,7 +344,7 @@ export default function SummaryPage() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                                {/* Nút mới thêm vào */}
+                                {/* Nút thêm hoạt động chính thức */}
                                 <button
                                     onClick={() => setIsAddModalOpen(true)}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-[#001C44] text-xs font-semibold hover:bg-[#BCFEFE] transition-all shadow-sm"
@@ -349,7 +353,7 @@ export default function SummaryPage() {
                                     Thêm hoạt động chính thức
                                 </button>
 
-                                {/* Nút Xuất file Excel cũ giữ nguyên */}
+                                {/* Nút Xuất file Excel */}
                                 <button
                                     onClick={exportToCSV}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#BCFEFE] text-[#001C44] text-xs font-semibold hover:bg-white transition-all shadow-sm"
@@ -444,7 +448,7 @@ export default function SummaryPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Dropdown chỉnh trạng thái thực tế */}
+                                            {/* Dropdown chỉnh trạng thái */}
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs text-slate-500">Tình trạng:</span>
                                                 <select
@@ -500,7 +504,6 @@ export default function SummaryPage() {
                                             {prop.note && <p className="text-slate-500 italic"><strong>Ghi chú:</strong> {prop.note}</p>}
                                         </div>
 
-                                        {/* Hàng 5: Link đề án gốc */}
                                         {/* Hàng 5: Link đề án gốc, Nút Xóa & Nút Đưa ra Trang chủ */}
                                         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                                             <a
@@ -552,6 +555,7 @@ export default function SummaryPage() {
                     Xây dựng và phát triển bởi <span className="font-semibold text-[#001C44]">Phạm Thị Vân Anh</span>
                 </p>
             </footer>
+
             {/* POPUP MODAL THÊM HOẠT ĐỘNG CHÍNH THỨC */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
@@ -572,7 +576,7 @@ export default function SummaryPage() {
                             </button>
                         </div>
 
-                        {/* Form nội dung có thanh cuộn riêng */}
+                        {/* Form nội dung */}
                         <form onSubmit={handleCreateOfficialActivity} className="flex flex-col overflow-hidden">
                             <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700 max-h-[calc(90vh-130px)]">
                                 {/* Tên hoạt động */}
@@ -620,7 +624,11 @@ export default function SummaryPage() {
                                         <label className="block font-semibold mb-1 text-[#001C44]">Tiêu chuẩn SV5T *</label>
                                         <select
                                             value={officialForm.target_standard}
-                                            onChange={(e) => setOfficialForm({ ...officialForm, target_standard: e.target.value })}
+                                            onChange={(e) => setOfficialForm({
+                                                ...officialForm,
+                                                target_standard: e.target.value,
+                                                criteria_detail: '' // Tự động reset tiêu chí chi tiết khi đổi nhóm
+                                            })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                         >
                                             <option value="DAO_DUC">Đạo đức tốt</option>
@@ -659,6 +667,30 @@ export default function SummaryPage() {
                                             ))}
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Tiêu chí cụ thể - Nằm riêng 1 hàng rộng rãi */}
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">
+                                        Tiêu chí cụ thể *
+                                    </label>
+                                    <select
+                                        value={officialForm.criteria_detail || ""}
+                                        onChange={(e) =>
+                                            setOfficialForm({ ...officialForm, criteria_detail: e.target.value })
+                                        }
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
+                                        required
+                                    >
+                                        <option value="">-- Chọn tiêu chí cụ thể tương ứng --</option>
+                                        {CRITERIA_TREE[officialForm.target_standard as keyof typeof CRITERIA_TREE]?.items.map(
+                                            (item, idx) => (
+                                                <option key={idx} value={item.full} title={item.full}>
+                                                    {item.display}
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
                                 </div>
 
                                 {/* Thời gian tổ chức */}
