@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Download, ExternalLink, Calendar, MapPin, Building2, User, Award, ArrowLeft, Filter, Trash2, Globe, Lock, KeyRound, PlusCircle, X } from 'lucide-react';
+import { Download, ExternalLink, Calendar, MapPin, Building2, User, Award, ArrowLeft, Filter, Trash2, Globe, Lock, KeyRound, PlusCircle, X, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from "@/data/criteria";
 
@@ -65,6 +65,11 @@ export default function SummaryPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [creating, setCreating] = useState(false);
 
+    // State quản lý mở/đóng popup CHỈNH SỬA hoạt động
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+    const [updating, setUpdating] = useState(false);
+
     // Form dữ liệu hoạt động chính thức
     const [officialForm, setOfficialForm] = useState({
         title: '',
@@ -82,7 +87,25 @@ export default function SummaryPage() {
         project_url: '',
     });
 
-    // Hàm xử lý lưu hoạt động chính thức thẳng vào bảng activities
+    // Lấy danh sách đề xuất
+    const fetchProposals = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('proposals')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (!error && data) {
+            setProposals(data);
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchProposals();
+    }, []);
+
+    // Hàm xử lý lưu hoạt động chính thức
     const handleCreateOfficialActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!officialForm.title || !officialForm.organizer || !officialForm.start_date || !officialForm.criteria_detail) {
@@ -92,8 +115,36 @@ export default function SummaryPage() {
 
         setCreating(true);
 
+        // 1. Thêm vào bảng proposals để theo dõi và sửa/xóa trực tiếp ngay trên trang /tong-hop
+        const { data: propData } = await supabase
+            .from('proposals')
+            .insert([
+                {
+                    student_name: 'Ban Tổ chức',
+                    student_id: 'BTC',
+                    activity_title: officialForm.title,
+                    organizer: officialForm.organizer,
+                    target_audience: officialForm.target_audience,
+                    project_url: officialForm.project_url,
+                    start_date: officialForm.start_date,
+                    end_date: officialForm.end_date || officialForm.start_date,
+                    location: officialForm.location,
+                    target_standard: officialForm.target_standard,
+                    target_sub_criterion: officialForm.criteria_detail,
+                    target_levels: officialForm.target_levels,
+                    proof_method: officialForm.proof_method,
+                    note: 'Hoạt động chính thức do BTC phê duyệt',
+                    status: 'APPROVED',
+                },
+            ])
+            .select();
+
+        const createdProposalId = propData?.[0]?.id || null;
+
+        // 2. Đồng thời đăng thẳng vào bảng activities ngoài Trang chủ
         const { error } = await supabase.from('activities').insert([
             {
+                proposal_id: createdProposalId,
                 title: officialForm.title,
                 organizer: officialForm.organizer,
                 target_audience: officialForm.target_audience,
@@ -105,9 +156,8 @@ export default function SummaryPage() {
                 location: officialForm.location,
                 proof_method: officialForm.proof_method,
                 supported_standard: officialForm.target_standard,
-                criteria_detail: officialForm.criteria_detail, // Lưu tiêu chí cụ thể
+                criteria_detail: officialForm.criteria_detail,
                 target_levels: officialForm.target_levels,
-                // Không có proposal_id vì đây là hoạt động đăng trực tiếp
             },
         ]);
 
@@ -118,7 +168,6 @@ export default function SummaryPage() {
         } else {
             alert('Đã đăng hoạt động chính thức lên Trang chủ thành công!');
             setIsAddModalOpen(false);
-            // Reset form
             setOfficialForm({
                 title: '',
                 criteria_detail: '',
@@ -134,15 +183,82 @@ export default function SummaryPage() {
                 proof_method: '',
                 project_url: '',
             });
+            fetchProposals();
         }
     };
 
-    // Hàm xóa hoạt động test / điền bừa
+    // Mở popup Sửa
+    const handleOpenEdit = (prop: Proposal) => {
+        setEditingProposal({ ...prop });
+        setIsEditModalOpen(true);
+    };
+
+    // Lưu thông tin sau khi SỬA
+    const handleUpdateProposal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingProposal) return;
+
+        setUpdating(true);
+
+        // 1. Cập nhật bảng proposals
+        const { error: propError } = await supabase
+            .from('proposals')
+            .update({
+                activity_title: editingProposal.activity_title,
+                organizer: editingProposal.organizer,
+                target_audience: editingProposal.target_audience,
+                target_standard: editingProposal.target_standard,
+                target_sub_criterion: editingProposal.target_sub_criterion,
+                target_levels: editingProposal.target_levels,
+                start_date: editingProposal.start_date,
+                end_date: editingProposal.end_date || editingProposal.start_date,
+                location: editingProposal.location,
+                proof_method: editingProposal.proof_method,
+                project_url: editingProposal.project_url,
+                note: editingProposal.note,
+            })
+            .eq('id', editingProposal.id);
+
+        if (propError) {
+            alert('Lỗi khi cập nhật đề xuất: ' + propError.message);
+            setUpdating(false);
+            return;
+        }
+
+        // 2. Đồng thời cập nhật luôn bảng activities ngoài Trang chủ (nếu hoạt động này đã được đăng ra ngoài)
+        await supabase
+            .from('activities')
+            .update({
+                title: editingProposal.activity_title,
+                organizer: editingProposal.organizer,
+                target_audience: editingProposal.target_audience,
+                content_description: `Đối tượng: ${editingProposal.target_audience}. Tiêu chí: ${editingProposal.target_sub_criterion}`,
+                project_url: editingProposal.project_url,
+                start_date: editingProposal.start_date,
+                end_date: editingProposal.end_date || editingProposal.start_date,
+                location: editingProposal.location,
+                proof_method: editingProposal.proof_method,
+                supported_standard: editingProposal.target_standard,
+                criteria_detail: editingProposal.target_sub_criterion,
+                target_levels: editingProposal.target_levels,
+            })
+            .eq('proposal_id', editingProposal.id);
+
+        // Cập nhật state hiển thị trên màn hình
+        setProposals((prev) =>
+            prev.map((p) => (p.id === editingProposal.id ? editingProposal : p))
+        );
+
+        setUpdating(false);
+        setIsEditModalOpen(false);
+        alert('Đã cập nhật thông tin hoạt động thành công!');
+    };
+
+    // Hàm xóa hoạt động
     const handleDelete = async (id: string, title: string) => {
         const confirmDelete = confirm(`Bạn có chắc chắn muốn xóa hoạt động:\n"${title}"?\n\nHoạt động này cũng sẽ tự động bị gỡ khỏi Trang chủ (nếu đã đăng).`);
         if (!confirmDelete) return;
 
-        // Xóa trực tiếp ở cả hai nơi để đảm bảo sạch dữ liệu
         await supabase.from('activities').delete().eq('proposal_id', id);
         const { error } = await supabase.from('proposals').delete().eq('id', id);
 
@@ -154,7 +270,7 @@ export default function SummaryPage() {
         setProposals((prev) => prev.filter((p) => p.id !== id));
     };
 
-    // Hàm chủ động đưa hoạt động ra Trang chủ cho sinh viên cày
+    // Đưa hoạt động ra Trang chủ
     const handlePublishToHome = async (prop: Proposal) => {
         const confirmPublish = confirm(
             `Đăng hoạt động "${prop.activity_title}" ra ngoài Trang chủ ngay bây giờ để các bạn sinh viên theo dõi và tham gia?`
@@ -176,6 +292,7 @@ export default function SummaryPage() {
                 location: prop.location,
                 proof_method: prop.proof_method,
                 supported_standard: prop.target_standard,
+                criteria_detail: prop.target_sub_criterion,
                 target_levels: prop.target_levels,
             },
         ]);
@@ -189,7 +306,6 @@ export default function SummaryPage() {
         }
     };
 
-    // Thêm hàm chuyển từ YYYY-MM-DD sang DD/MM/YYYY
     const formatDateVN = (dateStr: string) => {
         if (!dateStr) return '';
         const parts = dateStr.split('-');
@@ -200,24 +316,6 @@ export default function SummaryPage() {
         return dateStr;
     };
 
-    const fetchProposals = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('proposals')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (!error && data) {
-            setProposals(data);
-        }
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        fetchProposals();
-    }, []);
-
-    // Đổi trạng thái xử lý
     const handleStatusChange = async (proposal: Proposal, newStatus: string) => {
         const { error } = await supabase
             .from('proposals')
@@ -233,7 +331,6 @@ export default function SummaryPage() {
             prev.map((p) => (p.id === proposal.id ? { ...p, status: newStatus } : p))
         );
 
-        // Nếu BTK đã công nhận -> Hỏi có muốn đăng thẳng hoạt động ra Trang chủ không
         if (newStatus === 'APPROVED') {
             const confirmPublish = confirm(
                 `BTK đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này hiển thị ngoài Trang chủ ngay không?`
@@ -242,6 +339,7 @@ export default function SummaryPage() {
             if (confirmPublish) {
                 const { error: insertError } = await supabase.from('activities').insert([
                     {
+                        proposal_id: proposal.id,
                         title: proposal.activity_title,
                         organizer: proposal.organizer,
                         content_description: `Đối tượng: ${proposal.target_audience}. Tiêu chí: ${proposal.target_sub_criterion}`,
@@ -251,6 +349,7 @@ export default function SummaryPage() {
                         location: proposal.location,
                         proof_method: proposal.proof_method,
                         supported_standard: proposal.target_standard,
+                        criteria_detail: proposal.target_sub_criterion,
                         target_levels: proposal.target_levels,
                     },
                 ]);
@@ -262,7 +361,7 @@ export default function SummaryPage() {
         }
     };
 
-    // Xuất file Excel / CSV
+    // Xuất file CSV
     const exportToCSV = () => {
         if (filteredProposals.length === 0) {
             alert('Không có dữ liệu trong danh sách đang lọc để xuất!');
@@ -270,20 +369,9 @@ export default function SummaryPage() {
         }
 
         const headers = [
-            'STT',
-            'Người đề xuất',
-            'MSSV',
-            'Tên hoạt động',
-            'Đơn vị tổ chức',
-            'Thời gian',
-            'Địa điểm',
-            'Tiêu chuẩn',
-            'Tiêu chí chi tiết',
-            'Cấp xét',
-            'Cách thức minh chứng',
-            'Link đề án/bài viết',
-            'Ghi chú',
-            'Trạng thái rà soát'
+            'STT', 'Người đề xuất', 'MSSV', 'Tên hoạt động', 'Đơn vị tổ chức',
+            'Thời gian', 'Địa điểm', 'Tiêu chuẩn', 'Tiêu chí chi tiết',
+            'Cấp xét', 'Cách thức minh chứng', 'Link đề án/bài viết', 'Ghi chú', 'Trạng thái rà soát'
         ];
 
         const rows = filteredProposals.map((p, index) => [
@@ -344,7 +432,6 @@ export default function SummaryPage() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                                {/* Nút thêm hoạt động chính thức */}
                                 <button
                                     onClick={() => setIsAddModalOpen(true)}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-[#001C44] text-xs font-semibold hover:bg-[#BCFEFE] transition-all shadow-sm"
@@ -353,7 +440,6 @@ export default function SummaryPage() {
                                     Thêm hoạt động chính thức
                                 </button>
 
-                                {/* Nút Xuất file Excel */}
                                 <button
                                     onClick={exportToCSV}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#BCFEFE] text-[#001C44] text-xs font-semibold hover:bg-white transition-all shadow-sm"
@@ -366,7 +452,7 @@ export default function SummaryPage() {
                     </div>
                 </header>
 
-                {/* Bộ lọc 2 tiêu chí: Tiêu chuẩn & Trạng thái */}
+                {/* Bộ lọc */}
                 <div className="max-w-5xl mx-auto px-4 mt-6">
                     <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
                         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
@@ -430,7 +516,7 @@ export default function SummaryPage() {
                                         key={prop.id}
                                         className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 hover:border-[#2D99AE]/60 transition-all"
                                     >
-                                        {/* Hàng 1: Tiêu chuẩn, Cấp xét & Menu đổi trạng thái */}
+                                        {/* Hàng 1 */}
                                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0C5776] text-white">
@@ -448,7 +534,6 @@ export default function SummaryPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Dropdown chỉnh trạng thái */}
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs text-slate-500">Tình trạng:</span>
                                                 <select
@@ -464,7 +549,7 @@ export default function SummaryPage() {
                                             </div>
                                         </div>
 
-                                        {/* Hàng 2: Tên hoạt động & Tiêu chí chi tiết */}
+                                        {/* Hàng 2 */}
                                         <div>
                                             <h2 className="text-base font-bold text-[#001C44]">
                                                 {prop.activity_title}
@@ -478,7 +563,7 @@ export default function SummaryPage() {
                                             </div>
                                         </div>
 
-                                        {/* Hàng 3: Chi tiết thông tin */}
+                                        {/* Hàng 3 */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
@@ -498,13 +583,13 @@ export default function SummaryPage() {
                                             </div>
                                         </div>
 
-                                        {/* Hàng 4: Minh chứng & Ghi chú */}
+                                        {/* Hàng 4 */}
                                         <div className="text-xs space-y-1 text-slate-700">
                                             <p><strong>Cách thức minh chứng:</strong> {prop.proof_method}</p>
                                             {prop.note && <p className="text-slate-500 italic"><strong>Ghi chú:</strong> {prop.note}</p>}
                                         </div>
 
-                                        {/* Hàng 5: Link đề án gốc, Nút Xóa & Nút Đưa ra Trang chủ */}
+                                        {/* Hàng 5: Link đề án, Nút Sửa, Nút Xóa & Nút Đưa ra Trang chủ */}
                                         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                                             <a
                                                 href={prop.project_url}
@@ -517,7 +602,17 @@ export default function SummaryPage() {
                                             </a>
 
                                             <div className="flex items-center gap-2">
-                                                {/* Nút XÓA bài test */}
+                                                {/* Nút CHỈNH SỬA */}
+                                                <button
+                                                    onClick={() => handleOpenEdit(prop)}
+                                                    title="Chỉnh sửa thông tin hoạt động này"
+                                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5 text-[#0C5776]" />
+                                                    <span>Sửa</span>
+                                                </button>
+
+                                                {/* Nút XÓA */}
                                                 <button
                                                     onClick={() => handleDelete(prop.id, prop.activity_title)}
                                                     title="Xóa đề xuất này khỏi danh sách"
@@ -556,12 +651,10 @@ export default function SummaryPage() {
                 </p>
             </footer>
 
-            {/* POPUP MODAL THÊM HOẠT ĐỘNG CHÍNH THỨC */}
+            {/* MODAL 1: THÊM HOẠT ĐỘNG CHÍNH THỨC */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                     <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
-
-                        {/* Header cố định ở trên cùng */}
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
                             <div>
                                 <h2 className="text-base font-bold text-[#001C44]">Thêm hoạt động chính thức trong ĐHBKHN</h2>
@@ -576,10 +669,8 @@ export default function SummaryPage() {
                             </button>
                         </div>
 
-                        {/* Form nội dung */}
                         <form onSubmit={handleCreateOfficialActivity} className="flex flex-col overflow-hidden">
                             <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700 max-h-[calc(90vh-130px)]">
-                                {/* Tên hoạt động */}
                                 <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Tên hoạt động *</label>
                                     <input
@@ -592,7 +683,6 @@ export default function SummaryPage() {
                                     />
                                 </div>
 
-                                {/* Đơn vị tổ chức & Đối tượng */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Đơn vị tổ chức *</label>
@@ -618,7 +708,6 @@ export default function SummaryPage() {
                                     </div>
                                 </div>
 
-                                {/* Tiêu chuẩn & Cấp xét */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Tiêu chuẩn SV5T *</label>
@@ -627,7 +716,7 @@ export default function SummaryPage() {
                                             onChange={(e) => setOfficialForm({
                                                 ...officialForm,
                                                 target_standard: e.target.value,
-                                                criteria_detail: '' // Tự động reset tiêu chí chi tiết khi đổi nhóm
+                                                criteria_detail: ''
                                             })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                         >
@@ -669,7 +758,6 @@ export default function SummaryPage() {
                                     </div>
                                 </div>
 
-                                {/* Tiêu chí cụ thể - Nằm riêng 1 hàng rộng rãi */}
                                 <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">
                                         Tiêu chí cụ thể *
@@ -693,7 +781,6 @@ export default function SummaryPage() {
                                     </select>
                                 </div>
 
-                                {/* Thời gian tổ chức */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Ngày bắt đầu *</label>
@@ -716,7 +803,6 @@ export default function SummaryPage() {
                                     </div>
                                 </div>
 
-                                {/* Hạn chót đăng ký & Địa điểm */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (nếu có)</label>
@@ -739,7 +825,6 @@ export default function SummaryPage() {
                                     </div>
                                 </div>
 
-                                {/* Cách thức minh chứng */}
                                 <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Cách thức minh chứng *</label>
                                     <input
@@ -752,7 +837,6 @@ export default function SummaryPage() {
                                     />
                                 </div>
 
-                                {/* Link bài viết / Đề án */}
                                 <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Link bài viết/ đề án chi tiết</label>
                                     <input
@@ -765,7 +849,6 @@ export default function SummaryPage() {
                                 </div>
                             </div>
 
-                            {/* Nút hành động cố định ở chân modal */}
                             <div className="flex justify-end gap-2.5 px-6 py-3.5 border-t border-slate-100 bg-slate-50 shrink-0">
                                 <button
                                     type="button"
@@ -780,6 +863,228 @@ export default function SummaryPage() {
                                     className="px-5 py-2 bg-[#0C5776] text-white font-semibold rounded-lg hover:bg-[#001C44] transition-colors disabled:opacity-50 text-xs shadow-sm"
                                 >
                                     {creating ? 'Đang đăng...' : 'Đăng lên Trang chủ ngay'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL 2: CHỈNH SỬA HOẠT ĐỘNG */}
+            {isEditModalOpen && editingProposal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
+                            <div>
+                                <h2 className="text-base font-bold text-[#001C44]">Chỉnh sửa hoạt động</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Cập nhật thông tin hoạt động và tự động đồng bộ ra Trang chủ.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsEditModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateProposal} className="flex flex-col overflow-hidden">
+                            <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700 max-h-[calc(90vh-130px)]">
+                                {/* Tên hoạt động */}
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Tên hoạt động *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={editingProposal.activity_title}
+                                        onChange={(e) => setEditingProposal({ ...editingProposal, activity_title: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                    />
+                                </div>
+
+                                {/* Đơn vị tổ chức & Đối tượng */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Đơn vị tổ chức *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={editingProposal.organizer}
+                                            onChange={(e) => setEditingProposal({ ...editingProposal, organizer: e.target.value })}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Đối tượng tham gia *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={editingProposal.target_audience}
+                                            onChange={(e) => setEditingProposal({ ...editingProposal, target_audience: e.target.value })}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Tiêu chuẩn & Cấp xét */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Tiêu chuẩn SV5T *</label>
+                                        <select
+                                            value={editingProposal.target_standard}
+                                            onChange={(e) => setEditingProposal({
+                                                ...editingProposal,
+                                                target_standard: e.target.value,
+                                                target_sub_criterion: ''
+                                            })}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
+                                        >
+                                            <option value="DAO_DUC">Đạo đức tốt</option>
+                                            <option value="HOC_TAP">Học tập tốt</option>
+                                            <option value="THE_LUC">Thể lực tốt</option>
+                                            <option value="TINH_NGUYEN">Tình nguyện tốt</option>
+                                            <option value="HOI_NHAP">Hội nhập tốt</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Cấp xét công nhận *</label>
+                                        <div className="flex items-center gap-3 pt-2">
+                                            {[
+                                                { key: 'DAI_HOC', label: 'Cấp ĐH' },
+                                                { key: 'THANH_PHO', label: 'Cấp TP' },
+                                                { key: 'TRUNG_UONG', label: 'Cấp TW' },
+                                            ].map((lvl) => (
+                                                <label key={lvl.key} className="inline-flex items-center gap-1.5 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editingProposal.target_levels?.includes(lvl.key)}
+                                                        onChange={(e) => {
+                                                            const currentLevels = editingProposal.target_levels || [];
+                                                            if (e.target.checked) {
+                                                                setEditingProposal({ ...editingProposal, target_levels: [...currentLevels, lvl.key] });
+                                                            } else {
+                                                                setEditingProposal({
+                                                                    ...editingProposal,
+                                                                    target_levels: currentLevels.filter((l) => l !== lvl.key),
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="rounded border-slate-300 text-[#0C5776] focus:ring-0"
+                                                    />
+                                                    <span>{lvl.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Tiêu chí cụ thể */}
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">
+                                        Tiêu chí cụ thể *
+                                    </label>
+                                    <select
+                                        value={editingProposal.target_sub_criterion || ""}
+                                        onChange={(e) =>
+                                            setEditingProposal({ ...editingProposal, target_sub_criterion: e.target.value })
+                                        }
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
+                                        required
+                                    >
+                                        <option value="">-- Chọn tiêu chí cụ thể tương ứng --</option>
+                                        {CRITERIA_TREE[editingProposal.target_standard as keyof typeof CRITERIA_TREE]?.items.map(
+                                            (item, idx) => (
+                                                <option key={idx} value={item.full} title={item.full}>
+                                                    {item.display}
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+                                </div>
+
+                                {/* Ngày bắt đầu & Ngày kết thúc */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Ngày bắt đầu *</label>
+                                        <input
+                                            type="date"
+                                            required
+                                            value={editingProposal.start_date}
+                                            onChange={(e) => setEditingProposal({ ...editingProposal, start_date: e.target.value })}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Ngày kết thúc</label>
+                                        <input
+                                            type="date"
+                                            value={editingProposal.end_date}
+                                            onChange={(e) => setEditingProposal({ ...editingProposal, end_date: e.target.value })}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Địa điểm */}
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Địa điểm tổ chức</label>
+                                    <input
+                                        type="text"
+                                        value={editingProposal.location}
+                                        onChange={(e) => setEditingProposal({ ...editingProposal, location: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                    />
+                                </div>
+
+                                {/* Cách thức minh chứng */}
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Cách thức minh chứng *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={editingProposal.proof_method}
+                                        onChange={(e) => setEditingProposal({ ...editingProposal, proof_method: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                    />
+                                </div>
+
+                                {/* Link bài viết */}
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Link bài viết/ đề án chi tiết</label>
+                                    <input
+                                        type="url"
+                                        value={editingProposal.project_url}
+                                        onChange={(e) => setEditingProposal({ ...editingProposal, project_url: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                    />
+                                </div>
+
+                                {/* Ghi chú */}
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Ghi chú</label>
+                                    <input
+                                        type="text"
+                                        value={editingProposal.note || ''}
+                                        onChange={(e) => setEditingProposal({ ...editingProposal, note: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2.5 px-6 py-3.5 border-t border-slate-100 bg-slate-50 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition-colors text-xs"
+                                >
+                                    Hủy bỏ
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={updating}
+                                    className="px-5 py-2 bg-[#0C5776] text-white font-semibold rounded-lg hover:bg-[#001C44] transition-colors disabled:opacity-50 text-xs shadow-sm"
+                                >
+                                    {updating ? 'Đang lưu...' : 'Lưu thay đổi'}
                                 </button>
                             </div>
                         </form>
