@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     Download, ExternalLink, Calendar, MapPin, Building2, User,
     Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil,
-    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw
+    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw, Timer
 } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from "@/data/criteria";
@@ -156,7 +156,50 @@ export default function SummaryPage() {
         };
     }, []);
 
-    // HÀM TRA CỨU HỒ SƠ SINH VIÊN KÈM TRẠNG THÁI MÃ PIN
+    const formatDateVN = (dateStr: string) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('T')[0].split('-');
+        if (parts.length === 3) {
+            const [year, month, day] = parts;
+            return `${day}/${month}/${year}`;
+        }
+        return dateStr;
+    };
+
+    // Hàm tính toán hạn chót & cảnh báo nhấp nháy cho Admin
+    const getDeadlineInfo = (deadlineStr?: string) => {
+        if (!deadlineStr) return null;
+        const deadline = new Date(deadlineStr);
+        if (isNaN(deadline.getTime())) return null;
+
+        const now = new Date();
+        const diffTime = deadline.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffTime < 0) {
+            return {
+                text: `Đã hết hạn (${formatDateVN(deadlineStr)})`,
+                isExpired: true,
+                isUrgent: false,
+            };
+        }
+
+        if (diffDays <= 3) {
+            return {
+                text: `Sắp hết hạn: còn ${diffDays === 0 ? 'hôm nay' : `${diffDays} ngày`}`,
+                isExpired: false,
+                isUrgent: true,
+            };
+        }
+
+        return {
+            text: `Hạn ĐK: ${formatDateVN(deadlineStr)} (còn ${diffDays} ngày)`,
+            isExpired: false,
+            isUrgent: false,
+        };
+    };
+
+    // Tra cứu hồ sơ sinh viên
     const handleAdminLookupStudent = async (e: React.FormEvent) => {
         e.preventDefault();
         const cleanMssv = adminSearchMssv.trim();
@@ -165,7 +208,6 @@ export default function SummaryPage() {
         setAdminStudentLoading(true);
         setAdminHasSearched(true);
 
-        // 1. Lấy hoạt động đã lưu
         const { data: actData } = await supabase
             .from('student_activities')
             .select('*')
@@ -174,7 +216,6 @@ export default function SummaryPage() {
 
         if (actData) setAdminStudentRecords(actData);
 
-        // 2. Kiểm tra xem sinh viên đã cài mã PIN chưa
         const { data: profileData } = await supabase
             .from('student_profiles')
             .select('student_id')
@@ -185,7 +226,7 @@ export default function SummaryPage() {
         setAdminStudentLoading(false);
     };
 
-    // HÀM XÓA / ĐẶT LẠI MÃ PIN CHO SINH VIÊN QUÊN MÃ
+    // Đặt lại mã PIN cho sinh viên
     const handleResetStudentPin = async () => {
         const cleanMssv = adminSearchMssv.trim();
         const confirmReset = confirm(
@@ -206,7 +247,7 @@ export default function SummaryPage() {
         }
     };
 
-    // CẬP NHẬT TRẠNG THÁI VÀ ĐỒNG BỘ DÂY CHUYỀN
+    // Thay đổi trạng thái duyệt và đồng bộ dây chuyền
     const handleActivityStatusChange = async (act: Activity, newStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => {
         const confirmChange = confirm(
             `Xác nhận đổi trạng thái hoạt động "${act.title}" thành:\n` +
@@ -417,16 +458,6 @@ export default function SummaryPage() {
         }
     };
 
-    const formatDateVN = (dateStr: string) => {
-        if (!dateStr) return '';
-        const parts = dateStr.split('T')[0].split('-');
-        if (parts.length === 3) {
-            const [year, month, day] = parts;
-            return `${day}/${month}/${year}`;
-        }
-        return dateStr;
-    };
-
     const handleProposalStatusChange = async (proposal: Proposal, newStatus: string) => {
         const { error } = await supabase
             .from('proposals')
@@ -552,8 +583,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('ACTIVITIES')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ACTIVITIES'
-                                ? 'border-[#0C5776] text-[#001C44]'
-                                : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <Globe className="w-4 h-4 text-[#0C5776]" />
@@ -566,8 +597,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('PROPOSALS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'PROPOSALS'
-                                ? 'border-[#0C5776] text-[#001C44]'
-                                : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             Đề xuất từ sinh viên
@@ -579,8 +610,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('STUDENTS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'STUDENTS'
-                                ? 'border-[#0C5776] text-[#001C44]'
-                                : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <User className="w-4 h-4 text-[#0C5776]" />
@@ -648,19 +679,21 @@ export default function SummaryPage() {
                                 filteredActivities.map((act) => {
                                     const currentStatus = act.status || 'APPROVED';
                                     const statusConfig = ACTIVITY_STATUS[currentStatus] || ACTIVITY_STATUS.APPROVED;
+                                    const deadlineInfo = getDeadlineInfo(act.registration_deadline);
 
                                     return (
                                         <div
                                             key={act.id}
                                             className={`bg-white border rounded-xl p-5 shadow-xs space-y-3 transition-all ${currentStatus === 'REJECTED'
-                                                ? 'border-rose-200 bg-rose-50/15'
-                                                : currentStatus === 'PENDING'
-                                                    ? 'border-amber-200 bg-amber-50/15'
-                                                    : 'border-slate-200 hover:border-[#2D99AE]/60'
+                                                    ? 'border-rose-200 bg-rose-50/15'
+                                                    : currentStatus === 'PENDING'
+                                                        ? 'border-amber-200 bg-amber-50/15'
+                                                        : 'border-slate-200 hover:border-[#2D99AE]/60'
                                                 }`}
                                         >
+                                            {/* Hàng 1: Tiêu chuẩn, Cấp xét, Hạn đăng ký & Nút trạng thái */}
                                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-2">
                                                     <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0C5776] text-white">
                                                         {CRITERIA_MAP[act.supported_standard] || act.supported_standard}
                                                     </span>
@@ -674,6 +707,32 @@ export default function SummaryPage() {
                                                             </span>
                                                         ))}
                                                     </div>
+
+                                                    {/* HUY HIỆU HẠN ĐĂNG KÝ CHO ADMIN */}
+                                                    {deadlineInfo && (
+                                                        <div>
+                                                            {deadlineInfo.isExpired ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                                                    <Clock className="w-3 h-3 text-slate-400" />
+                                                                    {deadlineInfo.text}
+                                                                </span>
+                                                            ) : deadlineInfo.isUrgent ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">
+                                                                    <span className="relative flex h-2 w-2">
+                                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+                                                                    </span>
+                                                                    <Timer className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                                                    {deadlineInfo.text}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+                                                                    <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                                                                    {deadlineInfo.text}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="flex items-center gap-2">
@@ -706,6 +765,7 @@ export default function SummaryPage() {
                                                 </div>
                                             </div>
 
+                                            {/* Tên hoạt động & Tiêu chí chi tiết */}
                                             <div>
                                                 <h2 className={`text-base font-bold ${currentStatus === 'REJECTED' ? 'text-rose-900 line-through opacity-80' : 'text-[#001C44]'}`}>
                                                     {act.title}
@@ -721,6 +781,7 @@ export default function SummaryPage() {
                                                 )}
                                             </div>
 
+                                            {/* Chi tiết hoạt động kèm Hạn chót đăng ký */}
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
                                                 <div className="flex items-center gap-2">
                                                     <Building2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
@@ -730,6 +791,12 @@ export default function SummaryPage() {
                                                     <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
                                                     <span>Thời gian: {formatDateVN(act.start_date)} → {formatDateVN(act.end_date)}</span>
                                                 </div>
+                                                {act.registration_deadline && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Timer className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                                        <span>Hạn chót đăng ký: <strong className="text-rose-600 font-bold">{formatDateVN(act.registration_deadline)}</strong></span>
+                                                    </div>
+                                                )}
                                                 {act.location && (
                                                     <div className="flex items-center gap-2">
                                                         <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
@@ -939,7 +1006,6 @@ export default function SummaryPage() {
                                             </div>
                                         </div>
 
-                                        {/* NÚT XÓA / ĐẶT LẠI MÃ PIN KHI SINH VIÊN QUÊN */}
                                         {studentHasPin && (
                                             <button
                                                 type="button"
@@ -969,8 +1035,8 @@ export default function SummaryPage() {
                                                             <Calendar className="w-3 h-3" /> {r.participation_date}
                                                         </span>
                                                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${r.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                                                            r.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                                                                'bg-rose-50 text-rose-700 border-rose-300'
+                                                                r.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                                                                    'bg-rose-50 text-rose-700 border-rose-300'
                                                             }`}>
                                                             {r.status === 'APPROVED' ? '✓ Đã công nhận' : r.status === 'PENDING' ? '⏳ Chờ xét' : '✕ Bị loại'}
                                                         </span>
@@ -999,7 +1065,6 @@ export default function SummaryPage() {
                 </div>
             </div>
 
-            {/* Footer */}
             <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-1 bg-white">
                 <p className="text-slate-400">
                     Đại học Bách khoa Hà Nội • Bản quyền © 2026
