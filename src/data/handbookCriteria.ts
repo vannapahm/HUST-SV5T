@@ -101,44 +101,45 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
     // =========================================================================
     THANH_PHO: {
         title: 'BỘ TIÊU CHUẨN XÉT CHỌN DANH HIỆU “SINH VIÊN 5 TỐT” CẤP THÀNH PHỐ',
-        subTitle: 'Quy chuẩn xét duyệt danh hiệu cấp Thành phố Hà Nội năm học 2025 - 2026',
+        subTitle: 'Tất cả các thành tích xét trao danh hiệu cấp TP được tính từ ngày 01/8 năm trước tới 31/7 năm xét danh hiệu.',
         standards: {
             DAO_DUC: {
                 mandatory: [
                     'Điểm rèn luyện trung bình cả năm học đạt từ 85 điểm trở lên.',
-                    'Không vi phạm pháp luật, nội quy, quy chế của Đại học, địa phương và nơi cư trú.'
+                    'Không vi phạm pháp luật, nội quy, quy chế của Đại học, địa phương và cộng đồng.'
                 ],
                 elective: [
-                    'Đoạt giải trong các cuộc thi tìm hiểu chủ nghĩa Mác – Lênin, tư tưởng Hồ Chí Minh cấp Thành phố trở lên.',
-                    'Là Đảng viên Đảng Cộng sản Việt Nam được đánh giá hoàn thành tốt nhiệm vụ trở lên trong năm học.',
-                    'Đạt danh hiệu Thanh niên tiên tiến làm theo lời Bác hoặc Gương người tốt việc tốt cấp Thành phố trở lên.',
-                    'Được Thành đoàn - Hội Sinh viên Thành phố khen thưởng về công tác Đoàn và phong trào thanh niên/sinh viên.'
+                    'Là thanh niên tiêu biểu, thanh niên tiên tiến làm theo lời Bác; gương người tốt, việc tốt; gương thanh niên, sinh viên sống đẹp; gương có hành động dũng cảm cứu người... được cấp ĐH, phường, xã trở lên được biểu dương, ghi nhận.',
+                    'Là Đảng viên Đảng Cộng sản Việt Nam, đánh giá xếp loại Đảng viên hoàn thành tốt nhiệm vụ trở lên.',
+                    'Tham gia các cuộc thi về Đảng, Đoàn - Hội do Trung ương, Thành phố tổ chức và phát động.',
+                    'Đạt giải tại các cuộc thi về Đảng, Đoàn - Hội cấp ĐH, phường, xã tổ chức và phát động.',
                 ]
             },
             HOC_TAP: {
                 mandatory: [
-                    'Đối với sinh viên Đại học: Điểm trung bình học tập cả năm đạt từ 3.2/4.0 trở lên.',
-                    'Đối với sinh viên là cán bộ Đoàn - Hội (từ Bí thư Chi đoàn, Chi hội trưởng trở lên): Điểm trung bình học tập năm học đạt từ 3.0/4.0 trở lên.'
+                    'Đối với sinh viên Đại học: Điểm trung bình chung học tập cả năm học đạt từ 3.2/4.0 trở lên.',
                 ],
                 elective: [
-                    'Tham gia đề tài Nghiên cứu khoa học sinh viên cấp Thành phố hoặc cấp Bộ nghiệm thu đạt loại Khá trở lên.',
-                    'Có bài báo khoa học đăng trên kỷ yếu hội thảo khoa học cấp quốc gia hoặc tạp chí chuyên ngành.',
-                    'Đoạt giải trong các kỳ thi Olympic môn học hoặc cuộc thi học thuật, sáng tạo kỹ thuật cấp Thành phố trở lên.'
+                    'Có đề tài NCKH, sinh viên đạt giải cấp ĐH trở lên (không áp dụng đối với luận văn tốt nghiệp.',
+                    'Có bài tham luận tại hội thảo khoa học hoặc tạp chí chuyên ngành của trường.',
+                    'Có sản phẩm sáng tạo được cấp bằng sáng chế, cấp giấy phép xuất bản hoặc đạt giải thưởng trong các cuộc thi ý tưởng sáng tạo từ cấp ĐH trở lên.',
+                    'Là thành viên các đội tuyển tham gia các kỳ thi học thuật cấp khu vực, cấp quốc gia, quốc tế.',
+                    'Đạt giải thưởng trong các cuộc thi ý tưởng sáng tạo từ cấp ĐH trở lên.'
                 ]
             },
             THE_LUC: {
                 mandatory: [
-                    'Đạt danh hiệu “Sinh viên khỏe” cấp Thành phố hoặc cấp Đại học theo quy định hiện hành.'
+                    'Hoàn thành chương trình đào tạo Giáo dục thể chất theo quy định tại Đại học Bách khoa Hà Nội (hoàn thành đủ 05 học phần GDTC).',
+                    'Không có điểm F nào trong tất cả các học phần Giáo dục thể chất đã học trong 02 học kỳ chính trong năm học (Với sinh viên chưa học đủ 05 học phần GDTC).'
                 ],
                 elective: [
-                    'Đoạt giải trong các hội thao, giải thi đấu thể dục thể thao cấp Thành phố trở lên.',
-                    'Là thành viên đội tuyển thể thao tham gia thi đấu các giải đấu cấp Thành phố hoặc cấp quốc gia.'
+                    'Tham gia các hoạt động sát hạch thể lực và đạt giấy chứng nhận "Sinh viên khỏe" từ cấp ĐH trở lên.',
+                    'Tham gia và đạt giải tại các hoạt động thể thao phong trào tại địa phương hoặc từ cấp ĐH trở lên tổ chức.'
                 ]
             },
             TINH_NGUYEN: {
                 mandatory: [
-                    'Tham gia tích cực các chiến dịch tình nguyện cao điểm, đạt tối thiểu 05 ngày tình nguyện cộng dồn trong năm học.',
-                    'Tham gia hiến máu tình nguyện ít nhất 01 lần trong năm học (hoặc vận động được ít nhất 03 người cùng hiến máu).'
+                    'Tham gia ít nhất 05 ngày tình nguyện/ năm (được tính theo số ngày thực tế tham gia các hoạt động tình nguyện cộng đồng).'
                 ],
                 priority: [
                     'Được Ban Chấp hành Thành đoàn hoặc Hội Sinh viên Thành phố tặng Bằng khen/Giấy khen về hoạt động tình nguyện vì cộng đồng.'
