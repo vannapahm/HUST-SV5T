@@ -426,6 +426,7 @@ export default function StudentPortfolioPage() {
             }
             newRecordPayload = {
                 student_id: currentMssv,
+                academic_year: academicYear,
                 activity_id: String(act.id),
                 activity_title: act.title,
                 organizer: act.organizer,
@@ -442,6 +443,7 @@ export default function StudentPortfolioPage() {
             }
             newRecordPayload = {
                 student_id: currentMssv,
+                academic_year: academicYear,
                 activity_id: null,
                 activity_title: customForm.activity_title,
                 organizer: customForm.organizer || 'Ban tổ chức',
