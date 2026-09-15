@@ -11,6 +11,7 @@ import {
 
 interface Activity {
   id: string | number;
+  academic_year?: string;
   title: string;
   organizer: string;
   target_audience?: string;
