@@ -47,12 +47,12 @@ interface AcademicInfo {
     phone: string;
     email_sis: string;
     faculty_name: string;
-    drl_sem1: number;
-    drl_sem2: number;
-    gpa_sem1: number;
-    credits_sem1: number;
-    gpa_sem2: number;
-    credits_sem2: number;
+    drl_sem1: number | string;
+    drl_sem2: number | string;
+    gpa_sem1: number | string;
+    credits_sem1: number | string;
+    gpa_sem2: number | string;
+    credits_sem2: number | string;
     physical_education_status: string;
     foreign_language_status: string;
     other_achievements: string;
