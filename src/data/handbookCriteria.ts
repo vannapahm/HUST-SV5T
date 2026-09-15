@@ -16,7 +16,7 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
     // 1. CẤP ĐẠI HỌC (CHUẨN 100% THEO 5 ẢNH BAN HÀNH CỦA ĐẠI HỌC BÁCH KHOA HÀ NỘI)
     // =========================================================================
     DAI_HOC: {
-        title: 'BỘ TIÊU CHUẨN XÉT CHỌN DANH HIỆU “SINH VIÊN 5 TỐT” CẤP ĐẠI HỌC NĂM HỌC 2025 - 2026',
+        title: 'BỘ TIÊU CHUẨN XÉT CHỌN DANH HIỆU “SINH VIÊN 5 TỐT” CẤP ĐẠI HỌC',
         subTitle: 'Áp dụng xét duyệt danh hiệu cấp Đại học Bách khoa Hà Nội năm học 2025 - 2026',
         standards: {
             DAO_DUC: {
@@ -101,7 +101,7 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
     // =========================================================================
     THANH_PHO: {
         title: 'BỘ TIÊU CHUẨN XÉT CHỌN DANH HIỆU “SINH VIÊN 5 TỐT” CẤP THÀNH PHỐ',
-        subTitle: 'Quy chuẩn xét duyệt danh hiệu cấp Thành phố Hà Nội',
+        subTitle: 'Quy chuẩn xét duyệt danh hiệu cấp Thành phố Hà Nội năm học 2025 - 2026',
         standards: {
             DAO_DUC: {
                 mandatory: [
