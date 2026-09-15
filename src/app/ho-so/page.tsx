@@ -224,7 +224,7 @@ export default function StudentPortfolioPage() {
             setAcademicData((prev) => ({
                 ...prev,
                 student_id: mssv,
-                email_sis: `${mssv}@sis.hust.edu.vn`
+                email_sis: ''
             }));
         }
     };
