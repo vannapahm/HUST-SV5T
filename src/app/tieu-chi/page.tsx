@@ -94,7 +94,7 @@ export default function CriteriaGuidePage() {
                                 </Link>
                                 <div className="inline-block mb-1">
                                     <span className="text-[11px] font-semibold uppercase tracking-wider text-[#BCFEFE] bg-[#0C5776]/60 px-2.5 py-0.5 rounded border border-[#2D99AE]/40">
-                                        Hội Sinh viên Đại học Bách khoa Hà Nội
+                                        Đại học Bách khoa Hà Nội
                                     </span>
                                 </div>
                                 <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight">
