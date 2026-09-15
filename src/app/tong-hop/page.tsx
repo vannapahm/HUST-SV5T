@@ -142,7 +142,28 @@ export default function SummaryPage() {
     };
 
     useEffect(() => {
+        // Tải dữ liệu lần đầu khi vào trang
         loadData();
+
+        // 1. Tự động kéo lại dữ liệu ngay khi mạng kết nối lại
+        const handleOnline = () => {
+            loadData();
+        };
+
+        // 2. Tự động cập nhật khi người dùng chuyển lại vào tab này
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadData();
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     // Hàm thêm mới hoạt động tự động ghi nhận
@@ -471,8 +492,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('ACTIVITIES')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ACTIVITIES'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <Globe className="w-4 h-4 text-[#0C5776]" />
@@ -485,8 +506,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('PROPOSALS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'PROPOSALS'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             Đề xuất từ sinh viên
