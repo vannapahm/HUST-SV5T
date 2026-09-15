@@ -356,6 +356,7 @@ export default function StudentPortfolioPage() {
 
         const payload = {
             ...academicData,
+            academic_year: academicYear,
             drl_sem1: Number(academicData.drl_sem1) || 0,
             drl_sem2: Number(academicData.drl_sem2) || 0,
             gpa_sem1: Number(academicData.gpa_sem1) || 0,
