@@ -930,7 +930,7 @@ export default function StudentPortfolioPage() {
                                                 onChange={(e) => setAcademicData({ ...academicData, position: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                                             />
-                                            <span className="text-[10px] text-slate-400 block mt-0.5">Không có ghi Không</span>
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">Không có ghi "Không"</span>
                                         </div>
                                         <div>
                                             <label className="block font-semibold mb-1">Số điện thoại *</label>
