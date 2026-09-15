@@ -552,8 +552,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('ACTIVITIES')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ACTIVITIES'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <Globe className="w-4 h-4 text-[#0C5776]" />
@@ -566,8 +566,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('PROPOSALS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'PROPOSALS'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             Đề xuất từ sinh viên
@@ -579,8 +579,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('STUDENTS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'STUDENTS'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <User className="w-4 h-4 text-[#0C5776]" />
@@ -653,10 +653,10 @@ export default function SummaryPage() {
                                         <div
                                             key={act.id}
                                             className={`bg-white border rounded-xl p-5 shadow-xs space-y-3 transition-all ${currentStatus === 'REJECTED'
-                                                    ? 'border-rose-200 bg-rose-50/15'
-                                                    : currentStatus === 'PENDING'
-                                                        ? 'border-amber-200 bg-amber-50/15'
-                                                        : 'border-slate-200 hover:border-[#2D99AE]/60'
+                                                ? 'border-rose-200 bg-rose-50/15'
+                                                : currentStatus === 'PENDING'
+                                                    ? 'border-amber-200 bg-amber-50/15'
+                                                    : 'border-slate-200 hover:border-[#2D99AE]/60'
                                                 }`}
                                         >
                                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -895,7 +895,7 @@ export default function SummaryPage() {
                             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
                                 <div className="flex items-center gap-2 text-xs font-bold text-[#001C44]">
                                     <ShieldCheck className="w-4 h-4 text-[#0C5776]" />
-                                    <span>Tra cứu hồ sơ sinh viên toàn hệ thống (Không cần mã PIN)</span>
+                                    <span>Tra cứu hồ sơ sinh viên toàn hệ thống</span>
                                 </div>
                                 <form onSubmit={handleAdminLookupStudent} className="flex flex-col sm:flex-row gap-2">
                                     <div className="relative flex-1">
@@ -969,8 +969,8 @@ export default function SummaryPage() {
                                                             <Calendar className="w-3 h-3" /> {r.participation_date}
                                                         </span>
                                                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${r.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                                                                r.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                                                                    'bg-rose-50 text-rose-700 border-rose-300'
+                                                            r.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                                                                'bg-rose-50 text-rose-700 border-rose-300'
                                                             }`}>
                                                             {r.status === 'APPROVED' ? '✓ Đã công nhận' : r.status === 'PENDING' ? '⏳ Chờ xét' : '✕ Bị loại'}
                                                         </span>
