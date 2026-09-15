@@ -60,14 +60,6 @@ export default function HomePage() {
   useEffect(() => {
     fetchActivities();
 
-    const handleOnline = () => fetchActivities();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') fetchActivities();
-    };
-
-    window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     const channel = supabase
       .channel('realtime_activities_home')
       .on(
@@ -80,8 +72,6 @@ export default function HomePage() {
       .subscribe();
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       supabase.removeChannel(channel);
     };
   }, []);
