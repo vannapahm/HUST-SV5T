@@ -828,7 +828,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Giới tính</label>
+                                            <label className="block font-semibold mb-1">Giới tính *</label>
                                             <select
                                                 value={academicData.gender}
                                                 onChange={(e) => setAcademicData({ ...academicData, gender: e.target.value })}
@@ -842,7 +842,7 @@ export default function StudentPortfolioPage() {
 
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <div>
-                                            <label className="block font-semibold mb-1">Năm sinh</label>
+                                            <label className="block font-semibold mb-1">Năm sinh *</label>
                                             <input
                                                 type="text"
                                                 placeholder="VD: 2005"
@@ -852,7 +852,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Dân tộc</label>
+                                            <label className="block font-semibold mb-1">Dân tộc *</label>
                                             <input
                                                 type="text"
                                                 placeholder="VD: Kinh"
@@ -862,7 +862,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Năm học thứ</label>
+                                            <label className="block font-semibold mb-1">Năm học thứ *</label>
                                             <select
                                                 value={academicData.student_year}
                                                 onChange={(e) => setAcademicData({ ...academicData, student_year: e.target.value })}
@@ -876,7 +876,7 @@ export default function StudentPortfolioPage() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Đoàn viên/ Đảng viên</label>
+                                            <label className="block font-semibold mb-1">Đoàn viên/ Đảng viên *</label>
                                             <select
                                                 value={academicData.union_status}
                                                 onChange={(e) => setAcademicData({ ...academicData, union_status: e.target.value })}
@@ -890,7 +890,7 @@ export default function StudentPortfolioPage() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block font-semibold mb-1">Lớp</label>
+                                            <label className="block font-semibold mb-1">Lớp *</label>
                                             <input
                                                 type="text"
                                                 required
@@ -901,7 +901,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Trường/Khoa</label>
+                                            <label className="block font-semibold mb-1">Trường/ Khoa *</label>
                                             <select
                                                 value={academicData.faculty_name}
                                                 onChange={(e) => setAcademicData({ ...academicData, faculty_name: e.target.value })}
@@ -916,7 +916,7 @@ export default function StudentPortfolioPage() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div>
-                                            <label className="block font-semibold mb-1">Chức vụ Đoàn - Hội</label>
+                                            <label className="block font-semibold mb-1">Chức vụ Đoàn - Hội *</label>
                                             <input
                                                 type="text"
                                                 placeholder="VD: Chi hội Trưởng..."
@@ -927,7 +927,7 @@ export default function StudentPortfolioPage() {
                                             <span className="text-[10px] text-slate-400 block mt-0.5">Không có ghi Không</span>
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Số điện thoại</label>
+                                            <label className="block font-semibold mb-1">Số điện thoại *</label>
                                             <input
                                                 type="text"
                                                 required
@@ -938,7 +938,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Email SIS</label>
+                                            <label className="block font-semibold mb-1">Email SIS *</label>
                                             <div className="flex rounded-lg border border-slate-300 overflow-hidden bg-white focus-within:border-[#0C5776]">
                                                 <input
                                                     type="text"
