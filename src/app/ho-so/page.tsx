@@ -662,8 +662,21 @@ export default function StudentPortfolioPage() {
                 {isLoggedIn && (
                     <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-150">
                         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <span className="text-xs text-slate-500">Hồ sơ sinh viên:</span>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-slate-500">Năm học xét duyệt:</span>
+                                    <select
+                                        value={academicYear}
+                                        onChange={(e) => setAcademicYear(e.target.value)}
+                                        className="text-xs font-bold text-[#0C5776] bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 focus:outline-none focus:border-[#0C5776] cursor-pointer"
+                                    >
+                                        <option value="2024-2025">Năm học 2024 – 2025</option>
+                                        <option value="2025-2026">Năm học 2025 – 2026</option>
+                                        <option value="2026-2027">Năm học 2026 – 2027</option>
+                                        <option value="2027-2028">Năm học 2027 – 2028</option>
+                                    </select>
+                                </div>
+
                                 <div className="text-xl font-bold text-[#001C44] flex flex-wrap items-center gap-2">
                                     <span>{academicData.full_name || 'Chưa cập nhật họ tên'}</span>
                                     <span className="text-sm font-semibold text-slate-500">({currentMssv})</span>
@@ -673,7 +686,7 @@ export default function StudentPortfolioPage() {
                                         </span>
                                     )}
                                 </div>
-                                <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-3">
+                                <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3">
                                     <span>Trường/Khoa: <strong>{academicData.faculty_name}</strong></span>
                                     <span>•</span>
                                     <span>GPA trung bình: <strong className="text-[#0C5776]">{formatGPA(calculatedStats.averageGpa)}/4.0</strong></span>
