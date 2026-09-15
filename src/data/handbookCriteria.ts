@@ -168,17 +168,16 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
     // =========================================================================
     TRUNG_UONG: {
         title: 'BỘ TIÊU CHUẨN XÉT CHỌN DANH HIỆU “SINH VIÊN 5 TỐT” CẤP TRUNG ƯƠNG',
-        subTitle: 'Quy chế xét chọn danh hiệu Sinh viên 5 tốt cấp Trung ương - Trung ương Hội Sinh viên Việt Nam',
+        subTitle: 'Hồ sơ đạt danh hiệu cấp TW trong nước cần phải đạt đồng thời tất cả các tiêu chí bắt buộc của 05 tiêu chuẩn và đạt từ 02 tiêu chí đạt thêm trở lên.',
         standards: {
             DAO_DUC: {
                 mandatory: [
-                    'Điểm rèn luyện trung bình năm học đạt từ 90 điểm trở lên (trên thang điểm 100).',
-                    'Tuyệt đối không vi phạm pháp luật, nội quy nhà trường và quy định của cộng đồng.'
+                    'Điểm rèn luyện đạt từ 95 điểm trở lên (trên thang điểm 100 theo quy chế đánh giá kết quả rèn luyện sinh viên hiện hành của Bộ Giáo dục và Đào tạo).',
+                    'Không vi phạm pháp luật và các quy chế, nội quy của nhà trường, quy định của địa phương và cộng đồng.'
                 ],
                 elective: [
-                    'Là Đảng viên Đảng Cộng sản Việt Nam được đánh giá xếp loại Hoàn thành xuất sắc nhiệm vụ.',
-                    'Được tuyên dương danh hiệu Thanh niên tiên tiến làm theo lời Bác toàn quốc hoặc Bằng khen Trung ương Đoàn/Trung ương Hội.',
-                    'Đoạt giải trong các cuộc thi tìm hiểu lịch sử, Mác – Lênin, tư tưởng Hồ Chí Minh cấp toàn quốc.'
+                    'Là thanh niên tiêu biểu, thanh niên tiên tiến làm theo lời Bác; gương người tốt, việc tốt; gương thanh niên, sinh viên sống đẹp; gương có hành động dũng cảm cứu người... được cấp tỉnh, thành phố trở lên biểu dương, ghi nhận.',
+                    'Đạt xếp loại "Đảng viên hoàn thành xuất sắc nhiệm vụ" trong năm gần nhất (áp dụng đối với sinh viên là Đảng viên chính thức của Đảng Cộng sản Việt Nam).'
                 ]
             },
             HOC_TAP: {
