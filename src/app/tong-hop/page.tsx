@@ -1066,7 +1066,7 @@ export default function SummaryPage() {
                                                 <tr>
                                                     <th className="px-4 py-3">STT</th>
                                                     <th className="px-4 py-3">MSSV</th>
-                                                    <th className="px-4 py-3">Mã PIN (6 số)</th>
+                                                    <th className="px-4 py-3">Mật khẩu</th>
                                                     <th className="px-4 py-3 text-center">Hoạt động đã lưu</th>
                                                     <th className="px-4 py-3 text-center">Tiêu chí công nhận</th>
                                                     <th className="px-4 py-3 text-right">Thao tác</th>
@@ -1111,7 +1111,7 @@ export default function SummaryPage() {
                                                                         className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold"
                                                                     >
                                                                         <RotateCcw className="w-3.5 h-3.5" />
-                                                                        <span>Đặt lại PIN</span>
+                                                                        <span>Đặt lại mật khẩu</span>
                                                                     </button>
                                                                 </div>
                                                             </td>
