@@ -146,53 +146,63 @@ export default function CriteriaGuidePage() {
     return (
         <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
             <div>
-                {/* Header trang trọng chuẩn phong thái Đoàn - Hội */}
+                {/* Header trang trọng, thoáng đãng */}
                 <header className="bg-[#001C44] text-white border-b border-[#0C5776] shadow-sm">
-                    <div className="max-w-5xl mx-auto px-4 py-6">
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <Link
-                                    href="/"
-                                    className="inline-flex items-center gap-1.5 text-xs text-[#BCFEFE] hover:underline mb-2"
-                                >
-                                    <ArrowLeft className="w-3.5 h-3.5" />
-                                    Về Trang chủ
-                                </Link>
-                                <div className="inline-block mb-1">
-                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#BCFEFE] bg-[#0C5776]/60 px-2.5 py-0.5 rounded border border-[#2D99AE]/40">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+
+                            {/* Cột thông tin bên trái */}
+                            <div className="space-y-3">
+                                {/* Hàng điều hướng & Huy hiệu: tách bạch, gọn gàng */}
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <Link
+                                        href="/"
+                                        className="inline-flex items-center gap-1.5 text-xs text-[#BCFEFE] hover:text-white bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg border border-white/15 transition-all"
+                                    >
+                                        <ArrowLeft className="w-3.5 h-3.5" />
+                                        <span>Về Trang chủ</span>
+                                    </Link>
+                                    <span className="hidden sm:inline text-white/30">•</span>
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#BCFEFE] bg-[#0C5776]/70 px-3 py-1 rounded-lg border border-[#2D99AE]/40 shadow-xs">
                                         Hội Sinh viên Đại học Bách khoa Hà Nội
                                     </span>
                                 </div>
-                                <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight">
+
+                                {/* Tiêu đề chính: chữ thoáng, không bị ép sát */}
+                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold uppercase tracking-normal leading-snug pt-1 text-white">
                                     Bộ tiêu chuẩn xét chọn danh hiệu “Sinh viên 5 tốt”
                                 </h1>
-                                <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Cấp Đại học năm học 2025 - 2026 • Cấp Thành phố • Cấp Trung ương
+
+                                {/* Phụ đề giải thích */}
+                                <p className="text-xs sm:text-sm text-[#BCFEFE]/85 leading-relaxed max-w-3xl">
+                                    Áp dụng xét chọn các cấp: Cấp Đại học năm học 2025 - 2026 • Cấp Thành phố • Cấp Trung ương
                                 </p>
                             </div>
 
-                            {/* Bảng hồ sơ tự rà soát */}
-                            <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl p-3.5 flex items-center gap-4 text-xs">
-                                <div>
-                                    <div className="text-[#BCFEFE] font-medium">Hồ sơ tự rà soát</div>
-                                    <div className="text-lg font-bold text-white">
-                                        {totalCompleted} <span className="text-xs font-normal text-slate-300">/ {allCriteriaList.length} tiêu chí đạt</span>
+                            {/* Cột thống kê rà soát bên phải: rộng rãi, nổi bật */}
+                            <div className="shrink-0">
+                                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 flex items-center gap-5 shadow-sm">
+                                    <div>
+                                        <div className="text-xs text-[#BCFEFE] font-medium tracking-wide">Hồ sơ tự rà soát</div>
+                                        <div className="text-2xl font-bold text-white mt-1">
+                                            {totalCompleted} <span className="text-xs font-normal text-slate-300">/ {allCriteriaList.length} tiêu chí đạt</span>
+                                        </div>
                                     </div>
+                                    {totalCompleted > 0 && (
+                                        <button
+                                            onClick={handleResetProgress}
+                                            title="Đặt lại bảng tự rà soát"
+                                            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all ml-2"
+                                        >
+                                            <RotateCcw className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
-                                {totalCompleted > 0 && (
-                                    <button
-                                        onClick={handleResetProgress}
-                                        title="Đặt lại bảng tự rà soát"
-                                        className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
-                                    >
-                                        <RotateCcw className="w-4 h-4" />
-                                    </button>
-                                )}
                             </div>
+
                         </div>
                     </div>
                 </header>
-
                 <div className="max-w-5xl mx-auto px-4 mt-6 space-y-5">
                     {/* Bảng điều khiển tra cứu */}
                     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-4">
@@ -218,8 +228,8 @@ export default function CriteriaGuidePage() {
                                     key={lvl.key}
                                     onClick={() => setSelectedLevel(lvl.key)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedLevel === lvl.key
-                                            ? 'bg-[#001C44] text-white shadow-xs'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        ? 'bg-[#001C44] text-white shadow-xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
                                     {lvl.label}
@@ -233,8 +243,8 @@ export default function CriteriaGuidePage() {
                             <button
                                 onClick={() => setSelectedStandard('ALL')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStandard === 'ALL'
-                                        ? 'bg-[#0C5776] text-white'
-                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    ? 'bg-[#0C5776] text-white'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                             >
                                 Toàn bộ 5 tiêu chuẩn
@@ -244,8 +254,8 @@ export default function CriteriaGuidePage() {
                                     key={key}
                                     onClick={() => setSelectedStandard(key)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${selectedStandard === key
-                                            ? 'bg-[#0C5776] text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        ? 'bg-[#0C5776] text-white'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
                                     <span>{config.label}</span>
@@ -281,8 +291,8 @@ export default function CriteriaGuidePage() {
                                     <div
                                         key={idx}
                                         className={`bg-white border rounded-xl p-4 transition-all flex items-start gap-3.5 shadow-xs ${isChecked
-                                                ? 'border-emerald-300 bg-emerald-50/25'
-                                                : 'border-slate-200 hover:border-[#2D99AE]/50'
+                                            ? 'border-emerald-300 bg-emerald-50/25'
+                                            : 'border-slate-200 hover:border-[#2D99AE]/50'
                                             }`}
                                     >
                                         <button
@@ -309,10 +319,10 @@ export default function CriteriaGuidePage() {
                                                         <span
                                                             key={lvl}
                                                             className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${lvl === 'DAI_HOC'
-                                                                    ? 'bg-blue-50 text-[#0C5776] border-blue-200'
-                                                                    : lvl === 'THANH_PHO'
-                                                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                                                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                                                                ? 'bg-blue-50 text-[#0C5776] border-blue-200'
+                                                                : lvl === 'THANH_PHO'
+                                                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                                    : 'bg-rose-50 text-rose-700 border-rose-200'
                                                                 }`}
                                                         >
                                                             {lvl === 'DAI_HOC' ? 'Cấp ĐH' : lvl === 'THANH_PHO' ? 'Cấp TP' : 'Cấp TW'}
