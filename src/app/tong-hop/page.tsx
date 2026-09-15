@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import {
     Download, ExternalLink, Calendar, MapPin, Building2, User,
-    Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil, CheckCircle2
+    Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil,
+    CheckCircle2, Clock, AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from "@/data/criteria";
@@ -45,6 +46,7 @@ interface Activity {
     criteria_detail?: string;
     target_levels?: string[];
     proposal_id?: string;
+    status?: 'APPROVED' | 'PENDING' | 'REJECTED';
 }
 
 const CRITERIA_MAP: Record<string, string> = {
@@ -55,27 +57,20 @@ const CRITERIA_MAP: Record<string, string> = {
     HOI_NHAP: 'Hội nhập tốt',
 };
 
-const STATUS_CONFIG: Record<string, { label: string; badgeClass: string }> = {
-    PENDING: {
-        label: 'Mới tiếp nhận',
-        badgeClass: 'bg-amber-50 text-amber-700 border-amber-300',
-    },
-    SUBMITTED: {
-        label: 'Đã gửi đề xuất',
-        badgeClass: 'bg-blue-50 text-blue-700 border-blue-300',
-    },
-    APPROVED: {
-        label: 'BTK công nhận',
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300',
-    },
-    REJECTED: {
-        label: 'BTK từ chối',
-        badgeClass: 'bg-rose-50 text-rose-700 border-rose-300',
-    },
+const PROPOSAL_STATUS: Record<string, { label: string; badgeClass: string }> = {
+    PENDING: { label: 'Mới tiếp nhận', badgeClass: 'bg-amber-50 text-amber-700 border-amber-300' },
+    SUBMITTED: { label: 'Đã gửi đề xuất', badgeClass: 'bg-blue-50 text-blue-700 border-blue-300' },
+    APPROVED: { label: 'BTK công nhận', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+    REJECTED: { label: 'BTK từ chối', badgeClass: 'bg-rose-50 text-rose-700 border-rose-300' },
+};
+
+const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
+    APPROVED: { label: '🟢 BTK công nhận (Tự động ghi nhận)', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+    PENDING: { label: '🟡 Đang diễn ra (Chờ xét cuối năm)', badgeClass: 'bg-amber-50 text-amber-700 border-amber-300' },
+    REJECTED: { label: '🔴 BTK không công nhận (Loại)', badgeClass: 'bg-rose-50 text-rose-700 border-rose-300' },
 };
 
 export default function SummaryPage() {
-    // Quản lý Tab: 'ACTIVITIES' (Hoạt động tự động ghi nhận) | 'PROPOSALS' (Đề xuất sinh viên)
     const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS'>('ACTIVITIES');
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -86,16 +81,16 @@ export default function SummaryPage() {
 
     const [publishingId, setPublishingId] = useState<string | null>(null);
 
-    // State thêm mới hoạt động tự động ghi nhận
+    // Modal thêm hoạt động
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [creating, setCreating] = useState(false);
 
-    // State sửa hoạt động tự động ghi nhận
+    // Modal sửa hoạt động
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [updating, setUpdating] = useState(false);
 
-    // Form dữ liệu thêm mới
+    // Form thêm mới
     const [officialForm, setOfficialForm] = useState({
         title: '',
         criteria_detail: '',
@@ -110,29 +105,25 @@ export default function SummaryPage() {
         location: '',
         proof_method: '',
         project_url: '',
+        status: 'APPROVED' as 'APPROVED' | 'PENDING',
     });
 
-    // 1. Tải danh sách đề xuất
     const fetchProposals = async () => {
         const { data, error } = await supabase
             .from('proposals')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (!error && data) {
-            setProposals(data);
-        }
+        if (!error && data) setProposals(data);
     };
 
-    // 2. Tải danh sách hoạt động tự động ghi nhận trên Trang chủ
     const fetchOfficialActivities = async () => {
         const { data, error } = await supabase
             .from('activities')
-            .select('*');
+            .select('*')
+            .order('start_date', { ascending: false });
 
-        if (!error && data) {
-            setOfficialActivities(data);
-        }
+        if (!error && data) setOfficialActivities(data);
     };
 
     const loadData = async () => {
@@ -142,19 +133,11 @@ export default function SummaryPage() {
     };
 
     useEffect(() => {
-        // Tải dữ liệu lần đầu khi vào trang
         loadData();
 
-        // 1. Tự động kéo lại dữ liệu ngay khi mạng kết nối lại
-        const handleOnline = () => {
-            loadData();
-        };
-
-        // 2. Tự động cập nhật khi người dùng chuyển lại vào tab này
+        const handleOnline = () => loadData();
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                loadData();
-            }
+            if (document.visibilityState === 'visible') loadData();
         };
 
         window.addEventListener('online', handleOnline);
@@ -166,7 +149,45 @@ export default function SummaryPage() {
         };
     }, []);
 
-    // Hàm thêm mới hoạt động tự động ghi nhận
+    // CẬP NHẬT TRẠNG THÁI HOẠT ĐỘNG VÀ ĐỒNG BỘ DÂY CHUYỀN SANG HỒ SƠ SINH VIÊN
+    const handleActivityStatusChange = async (act: Activity, newStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => {
+        const confirmChange = confirm(
+            `Xác nhận đổi trạng thái hoạt động "${act.title}" thành:\n` +
+            (newStatus === 'APPROVED' ? 'BTK CÔNG NHẬN' : newStatus === 'PENDING' ? 'CHỜ XÉT CUỐI NĂM' : 'LOẠI / KHÔNG CÔNG NHẬN') +
+            `\n\nToàn bộ hồ sơ của sinh viên đã tham gia hoạt động này sẽ được tự động cập nhật đồng bộ.`
+        );
+        if (!confirmChange) return;
+
+        // 1. Cập nhật bảng activities ngoài trang chủ
+        const { error: actError } = await supabase
+            .from('activities')
+            .update({ status: newStatus })
+            .eq('id', act.id);
+
+        if (actError) {
+            alert('Lỗi cập nhật bảng hoạt động: ' + actError.message);
+            return;
+        }
+
+        // 2. Cập nhật dây chuyền sang bảng student_activities
+        await supabase
+            .from('student_activities')
+            .update({ status: newStatus })
+            .eq('activity_id', String(act.id));
+
+        // Cập nhật lại giao diện
+        setOfficialActivities((prev) =>
+            prev.map((item) => (item.id === act.id ? { ...item, status: newStatus } : item))
+        );
+
+        alert(
+            newStatus === 'REJECTED'
+                ? 'Đã loại hoạt động! Hệ thống đã tự động gạch tên và trừ điểm trong hồ sơ của tất cả sinh viên tham gia.'
+                : 'Đã cập nhật trạng thái hoạt động thành công trên toàn hệ thống!'
+        );
+    };
+
+    // Thêm hoạt động mới
     const handleCreateOfficialActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!officialForm.title || !officialForm.organizer || !officialForm.start_date || !officialForm.criteria_detail) {
@@ -181,7 +202,7 @@ export default function SummaryPage() {
                 title: officialForm.title,
                 organizer: officialForm.organizer,
                 target_audience: officialForm.target_audience,
-                content_description: officialForm.content_description || `Hoạt động tự động ghi nhận tiêu chuẩn Sinh viên 5 tốt.`,
+                content_description: officialForm.content_description || `Hoạt động hỗ trợ tiêu chuẩn Sinh viên 5 tốt.`,
                 project_url: officialForm.project_url,
                 start_date: officialForm.start_date,
                 end_date: officialForm.end_date || officialForm.start_date,
@@ -191,6 +212,7 @@ export default function SummaryPage() {
                 supported_standard: officialForm.target_standard,
                 criteria_detail: officialForm.criteria_detail,
                 target_levels: officialForm.target_levels,
+                status: officialForm.status,
             },
         ]);
 
@@ -199,7 +221,7 @@ export default function SummaryPage() {
         if (error) {
             alert('Lỗi khi thêm hoạt động: ' + error.message);
         } else {
-            alert('Đã đăng hoạt động tự động ghi nhận lên Trang chủ thành công!');
+            alert('Đã đăng hoạt động lên hệ thống thành công!');
             setIsAddModalOpen(false);
             setOfficialForm({
                 title: '',
@@ -215,18 +237,17 @@ export default function SummaryPage() {
                 location: '',
                 proof_method: '',
                 project_url: '',
+                status: 'APPROVED',
             });
             fetchOfficialActivities();
         }
     };
 
-    // Mở popup Sửa hoạt động tự động ghi nhận
     const handleOpenEditActivity = (act: Activity) => {
         setEditingActivity({ ...act });
         setIsEditModalOpen(true);
     };
 
-    // Lưu chỉnh sửa hoạt động tự động ghi nhận
     const handleUpdateActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingActivity) return;
@@ -248,6 +269,7 @@ export default function SummaryPage() {
                 criteria_detail: editingActivity.criteria_detail,
                 target_levels: editingActivity.target_levels,
                 project_url: editingActivity.project_url,
+                status: editingActivity.status || 'APPROVED',
             })
             .eq('id', editingActivity.id);
 
@@ -258,16 +280,25 @@ export default function SummaryPage() {
             return;
         }
 
+        // Cập nhật tên hoạt động tương ứng trong student_activities
+        await supabase
+            .from('student_activities')
+            .update({
+                activity_title: editingActivity.title,
+                criteria_detail: editingActivity.criteria_detail,
+                status: editingActivity.status || 'APPROVED',
+            })
+            .eq('activity_id', String(editingActivity.id));
+
         setOfficialActivities((prev) =>
             prev.map((item) => (item.id === editingActivity.id ? editingActivity : item))
         );
         setIsEditModalOpen(false);
-        alert('Đã lưu thay đổi hoạt động tự động ghi nhận thành công!');
+        alert('Đã lưu thay đổi hoạt động thành công!');
     };
 
-    // Xóa hoạt động tự động ghi nhận khỏi Trang chủ
     const handleDeleteOfficialActivity = async (id: string | number, title: string) => {
-        const confirmDelete = confirm(`Bạn có chắc chắn muốn xóa hoạt động tự động ghi nhận:\n"${title}"\nkhỏi Trang chủ không?`);
+        const confirmDelete = confirm(`Bạn có chắc chắn muốn xóa hoạt động:\n"${title}"\nkhỏi hệ thống không?`);
         if (!confirmDelete) return;
 
         const { error } = await supabase.from('activities').delete().eq('id', id);
@@ -278,10 +309,9 @@ export default function SummaryPage() {
         }
 
         setOfficialActivities((prev) => prev.filter((a) => a.id !== id));
-        alert('Đã gỡ hoạt động tự động ghi nhận khỏi Trang chủ!');
+        alert('Đã xóa hoạt động khỏi Trang chủ thành công!');
     };
 
-    // Xóa đề xuất sinh viên
     const handleDeleteProposal = async (id: string, title: string) => {
         const confirmDelete = confirm(`Bạn có chắc chắn muốn xóa đề xuất:\n"${title}"?\n\nHoạt động này cũng sẽ bị gỡ khỏi Trang chủ (nếu đã đăng).`);
         if (!confirmDelete) return;
@@ -298,10 +328,9 @@ export default function SummaryPage() {
         fetchOfficialActivities();
     };
 
-    // Đưa hoạt động từ đề xuất ra Trang chủ
     const handlePublishToHome = async (prop: Proposal) => {
         const confirmPublish = confirm(
-            `Đăng hoạt động "${prop.activity_title}" vào danh mục "Hoạt động tự động ghi nhận" ngoài Trang chủ để sinh viên theo dõi?`
+            `Đăng hoạt động "${prop.activity_title}" ra ngoài Trang chủ để sinh viên theo dõi?`
         );
         if (!confirmPublish) return;
 
@@ -322,6 +351,7 @@ export default function SummaryPage() {
                 supported_standard: prop.target_standard,
                 criteria_detail: prop.target_sub_criterion,
                 target_levels: prop.target_levels,
+                status: 'APPROVED',
             },
         ]);
 
@@ -330,7 +360,7 @@ export default function SummaryPage() {
         if (error) {
             alert('Có lỗi khi đưa lên Trang chủ: ' + error.message);
         } else {
-            alert('Đã đưa vào danh mục Hoạt động tự động ghi nhận trên Trang chủ thành công!');
+            alert('Đã đăng lên Trang chủ thành công!');
             fetchOfficialActivities();
         }
     };
@@ -345,7 +375,7 @@ export default function SummaryPage() {
         return dateStr;
     };
 
-    const handleStatusChange = async (proposal: Proposal, newStatus: string) => {
+    const handleProposalStatusChange = async (proposal: Proposal, newStatus: string) => {
         const { error } = await supabase
             .from('proposals')
             .update({ status: newStatus })
@@ -362,36 +392,15 @@ export default function SummaryPage() {
 
         if (newStatus === 'APPROVED') {
             const confirmPublish = confirm(
-                `BTK đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này thành Hoạt động tự động ghi nhận ngoài Trang chủ ngay không?`
+                `BTK đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này lên Trang chủ ngay không?`
             );
 
             if (confirmPublish) {
-                const { error: insertError } = await supabase.from('activities').insert([
-                    {
-                        proposal_id: proposal.id,
-                        title: proposal.activity_title,
-                        organizer: proposal.organizer,
-                        content_description: `Đối tượng: ${proposal.target_audience}. Tiêu chí: ${proposal.target_sub_criterion}`,
-                        project_url: proposal.project_url,
-                        start_date: proposal.start_date,
-                        end_date: proposal.end_date,
-                        location: proposal.location,
-                        proof_method: proposal.proof_method,
-                        supported_standard: proposal.target_standard,
-                        criteria_detail: proposal.target_sub_criterion,
-                        target_levels: proposal.target_levels,
-                    },
-                ]);
-
-                if (!insertError) {
-                    alert('Đã đưa vào danh mục Hoạt động tự động ghi nhận ngoài Trang chủ thành công!');
-                    fetchOfficialActivities();
-                }
+                await handlePublishToHome(proposal);
             }
         }
     };
 
-    // Xuất file CSV
     const exportToCSV = () => {
         if (filteredProposals.length === 0) {
             alert('Không có dữ liệu trong danh sách đang lọc để xuất!');
@@ -418,7 +427,7 @@ export default function SummaryPage() {
             `"${p.proof_method.replace(/"/g, '""')}"`,
             `"${p.project_url}"`,
             `"${(p.note || '').replace(/"/g, '""')}"`,
-            `"${STATUS_CONFIG[p.status]?.label || p.status}"`
+            `"${PROPOSAL_STATUS[p.status]?.label || p.status}"`
         ]);
 
         const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -426,7 +435,7 @@ export default function SummaryPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `De_xuat_SV5T_gui_BTK_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute('download', `De_xuat_SV5T_${new Date().toISOString().slice(0, 10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -445,7 +454,6 @@ export default function SummaryPage() {
     return (
         <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
             <div>
-                {/* Header */}
                 <header className="bg-[#001C44] text-white border-b border-[#0C5776] shadow-sm">
                     <div className="max-w-5xl mx-auto px-4 py-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -461,7 +469,7 @@ export default function SummaryPage() {
                                     Tổng hợp hoạt động xét chọn SV5T
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Quản lý danh mục hoạt động tự động ghi nhận và theo dõi các đề xuất từ sinh viên.
+                                    Quản trị viên: Phê duyệt, điều chỉnh trạng thái và đồng bộ dây chuyền sang hồ sơ sinh viên.
                                 </p>
                             </div>
 
@@ -471,7 +479,7 @@ export default function SummaryPage() {
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-[#001C44] text-xs font-semibold hover:bg-[#BCFEFE] transition-all shadow-sm"
                                 >
                                     <PlusCircle className="w-4 h-4 text-[#0C5776]" />
-                                    Thêm hoạt động tự động ghi nhận
+                                    Thêm hoạt động mới
                                 </button>
 
                                 <button
@@ -486,18 +494,18 @@ export default function SummaryPage() {
                     </div>
                 </header>
 
-                {/* 2 TAB QUẢN LÝ */}
                 <div className="max-w-5xl mx-auto px-4 mt-6">
+                    {/* Thanh Tab */}
                     <div className="flex border-b border-slate-200 gap-4 mb-4">
                         <button
                             onClick={() => setActiveTab('ACTIVITIES')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ACTIVITIES'
-                                ? 'border-[#0C5776] text-[#001C44]'
-                                : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <Globe className="w-4 h-4 text-[#0C5776]" />
-                            Hoạt động tự động ghi nhận
+                            Hoạt động trên hệ thống (Trang chủ)
                             <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-[#0C5776] font-bold">
                                 {officialActivities.length}
                             </span>
@@ -506,8 +514,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('PROPOSALS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'PROPOSALS'
-                                ? 'border-[#0C5776] text-[#001C44]'
-                                : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             Đề xuất từ sinh viên
@@ -517,7 +525,7 @@ export default function SummaryPage() {
                         </button>
                     </div>
 
-                    {/* BỘ LỌC DÙNG CHUNG */}
+                    {/* Bộ lọc */}
                     <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs mb-4">
                         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
                             <div className="flex items-center gap-1.5">
@@ -545,7 +553,7 @@ export default function SummaryPage() {
                                         onChange={(e) => setFilterStatus(e.target.value)}
                                         className="px-2.5 py-1 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
                                     >
-                                        <option value="ALL">Tất cả trạng thái</option>
+                                        <option value="ALL">Tất cả</option>
                                         <option value="PENDING">🟡 Mới tiếp nhận</option>
                                         <option value="SUBMITTED">🔵 Đã gửi đề xuất</option>
                                         <option value="APPROVED">🟢 BTK công nhận</option>
@@ -562,120 +570,132 @@ export default function SummaryPage() {
                         </div>
                     </div>
 
-                    {/* ======================= TAB 1: HOẠT ĐỘNG TỰ ĐỘNG GHI NHẬN ======================= */}
+                    {/* ======================= TAB 1: HOẠT ĐỘNG TRÊN HỆ THỐNG ======================= */}
                     {activeTab === 'ACTIVITIES' && (
                         <div className="space-y-4">
-                            <div className="bg-[#BCFEFE]/15 border border-[#2D99AE]/30 rounded-xl p-3 text-xs text-[#001C44] flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-[#0C5776] shrink-0" />
-                                <span>
-                                    Danh mục các hoạt động đã được <strong>BTK HSV Đại học phê duyệt trước tiêu chí</strong>. Sinh viên tham gia sẽ được tính nhận diện tự động, không cần làm đơn đề xuất.
-                                </span>
-                            </div>
-
                             {loading ? (
                                 <div className="py-12 text-center text-xs text-slate-500">Đang tải danh sách hoạt động...</div>
                             ) : filteredActivities.length === 0 ? (
                                 <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-xs">
-                                    Chưa có hoạt động tự động ghi nhận nào phù hợp.
+                                    Chưa có hoạt động nào phù hợp.
                                 </div>
                             ) : (
-                                filteredActivities.map((act) => (
-                                    <div
-                                        key={act.id}
-                                        className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3 hover:border-[#2D99AE]/60 transition-all"
-                                    >
-                                        {/* Hàng 1: Tiêu chuẩn, Cấp xét & Nút Thao tác */}
-                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0C5776] text-white">
-                                                    {CRITERIA_MAP[act.supported_standard] || act.supported_standard}
-                                                </span>
-                                                <div className="flex gap-1">
-                                                    {act.target_levels?.map((lvl) => (
-                                                        <span
-                                                            key={lvl}
-                                                            className="text-[11px] px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium"
-                                                        >
-                                                            {lvl === 'DAI_HOC' ? 'Cấp ĐH' : lvl === 'THANH_PHO' ? 'Cấp TP' : 'Cấp TW'}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                filteredActivities.map((act) => {
+                                    const currentStatus = act.status || 'APPROVED';
+                                    const statusConfig = ACTIVITY_STATUS[currentStatus] || ACTIVITY_STATUS.APPROVED;
 
-                                            {/* Nút Sửa & Xóa trực tiếp */}
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => handleOpenEditActivity(act)}
-                                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
-                                                >
-                                                    <Pencil className="w-3.5 h-3.5 text-[#0C5776]" />
-                                                    <span>Sửa</span>
-                                                </button>
-
-                                                <button
-                                                    onClick={() => handleDeleteOfficialActivity(act.id, act.title)}
-                                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                    <span>Xóa</span>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Hàng 2: Tiêu đề & Tiêu chí chi tiết */}
-                                        <div>
-                                            <h2 className="text-base font-bold text-[#001C44]">{act.title}</h2>
-                                            {act.criteria_detail && (
-                                                <div className="mt-2 p-2.5 rounded-lg bg-[#BCFEFE]/15 border border-[#2D99AE]/25 text-xs text-[#001C44] flex items-start gap-2">
-                                                    <Award className="w-4 h-4 text-[#0C5776] shrink-0 mt-0.5" />
-                                                    <div>
-                                                        <span className="font-semibold text-[#0C5776]">Tiêu chí tương ứng:</span>{' '}
-                                                        <span className="text-slate-700">{act.criteria_detail}</span>
+                                    return (
+                                        <div
+                                            key={act.id}
+                                            className={`bg-white border rounded-xl p-5 shadow-xs space-y-3 transition-all ${currentStatus === 'REJECTED'
+                                                    ? 'border-rose-200 bg-rose-50/15'
+                                                    : currentStatus === 'PENDING'
+                                                        ? 'border-amber-200 bg-amber-50/15'
+                                                        : 'border-slate-200 hover:border-[#2D99AE]/60'
+                                                }`}
+                                        >
+                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0C5776] text-white">
+                                                        {CRITERIA_MAP[act.supported_standard] || act.supported_standard}
+                                                    </span>
+                                                    <div className="flex gap-1">
+                                                        {act.target_levels?.map((lvl) => (
+                                                            <span
+                                                                key={lvl}
+                                                                className="text-[11px] px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium"
+                                                            >
+                                                                {lvl === 'DAI_HOC' ? 'Cấp ĐH' : lvl === 'THANH_PHO' ? 'Cấp TP' : 'Cấp TW'}
+                                                            </span>
+                                                        ))}
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
 
-                                        {/* Hàng 3: Chi tiết thông tin */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                                                <span>Đơn vị tổ chức: <strong>{act.organizer}</strong></span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                                                <span>Thời gian: {formatDateVN(act.start_date)} → {formatDateVN(act.end_date)}</span>
-                                            </div>
-                                            {act.location && (
+                                                {/* Bộ đổi trạng thái duyệt và đồng bộ dây chuyền */}
                                                 <div className="flex items-center gap-2">
-                                                    <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                                                    <span>Địa điểm: {act.location}</span>
+                                                    <span className="text-xs text-slate-500 font-medium">Trạng thái:</span>
+                                                    <select
+                                                        value={currentStatus}
+                                                        onChange={(e) => handleActivityStatusChange(act, e.target.value as any)}
+                                                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${statusConfig.badgeClass}`}
+                                                    >
+                                                        <option value="APPROVED">🟢 BTK công nhận</option>
+                                                        <option value="PENDING">🟡 Chờ xét cuối năm</option>
+                                                        <option value="REJECTED">🔴 Loại (Không công nhận)</option>
+                                                    </select>
+
+                                                    <button
+                                                        onClick={() => handleOpenEditActivity(act)}
+                                                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5 text-[#0C5776]" />
+                                                        <span>Sửa</span>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleDeleteOfficialActivity(act.id, act.title)}
+                                                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        <span>Xóa</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h2 className={`text-base font-bold ${currentStatus === 'REJECTED' ? 'text-rose-900 line-through opacity-80' : 'text-[#001C44]'}`}>
+                                                    {act.title}
+                                                </h2>
+                                                {act.criteria_detail && (
+                                                    <div className="mt-2 p-2.5 rounded-lg bg-[#BCFEFE]/15 border border-[#2D99AE]/25 text-xs text-[#001C44] flex items-start gap-2">
+                                                        <Award className="w-4 h-4 text-[#0C5776] shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <span className="font-semibold text-[#0C5776]">Tiêu chí tương ứng:</span>{' '}
+                                                            <span className="text-slate-700">{act.criteria_detail}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                                                    <span>Đơn vị tổ chức: <strong>{act.organizer}</strong></span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                                                    <span>Thời gian: {formatDateVN(act.start_date)} → {formatDateVN(act.end_date)}</span>
+                                                </div>
+                                                {act.location && (
+                                                    <div className="flex items-center gap-2">
+                                                        <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                                                        <span>Địa điểm: {act.location}</span>
+                                                    </div>
+                                                )}
+                                                {act.proof_method && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Award className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                                                        <span>Minh chứng: {act.proof_method}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {act.project_url && (
+                                                <div className="pt-1">
+                                                    <a
+                                                        href={act.project_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="inline-flex items-center gap-1 text-xs text-[#0C5776] hover:text-[#001C44] font-semibold underline"
+                                                    >
+                                                        Xem bài viết chi tiết
+                                                        <ExternalLink className="w-3 h-3" />
+                                                    </a>
                                                 </div>
                                             )}
-                                            {act.proof_method && (
-                                                <div className="flex items-center gap-2">
-                                                    <Award className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                                                    <span>Minh chứng: {act.proof_method}</span>
-                                                </div>
-                                            )}
                                         </div>
-
-                                        {/* Hàng 4: Link bài viết */}
-                                        {act.project_url && (
-                                            <div className="pt-2">
-                                                <a
-                                                    href={act.project_url}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="inline-flex items-center gap-1 text-xs text-[#0C5776] hover:text-[#001C44] font-semibold underline"
-                                                >
-                                                    Xem bài viết/ đề án chi tiết
-                                                    <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     )}
@@ -691,7 +711,7 @@ export default function SummaryPage() {
                                 </div>
                             ) : (
                                 filteredProposals.map((prop) => {
-                                    const currentStatus = STATUS_CONFIG[prop.status] || {
+                                    const currentStatus = PROPOSAL_STATUS[prop.status] || {
                                         label: prop.status,
                                         badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
                                     };
@@ -722,7 +742,7 @@ export default function SummaryPage() {
                                                     <span className="text-xs text-slate-500">Tình trạng:</span>
                                                     <select
                                                         value={prop.status}
-                                                        onChange={(e) => handleStatusChange(prop, e.target.value)}
+                                                        onChange={(e) => handleProposalStatusChange(prop, e.target.value)}
                                                         className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${currentStatus.badgeClass}`}
                                                     >
                                                         <option value="PENDING">🟡 Mới tiếp nhận</option>
@@ -775,7 +795,7 @@ export default function SummaryPage() {
                                                     rel="noreferrer"
                                                     className="inline-flex items-center gap-1 text-xs text-[#0C5776] hover:text-[#001C44] font-semibold underline"
                                                 >
-                                                    Xem bài viết/ đề án gốc
+                                                    Xem bài viết gốc
                                                     <ExternalLink className="w-3 h-3" />
                                                 </a>
 
@@ -785,7 +805,7 @@ export default function SummaryPage() {
                                                         className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
-                                                        <span>Xóa đề xuất</span>
+                                                        <span>Xóa</span>
                                                     </button>
 
                                                     <button
@@ -794,7 +814,7 @@ export default function SummaryPage() {
                                                         className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-[#0C5776] text-white hover:bg-[#001C44] transition-colors disabled:opacity-50 shadow-xs"
                                                     >
                                                         <Globe className="w-3.5 h-3.5 text-[#BCFEFE]" />
-                                                        <span>{publishingId === prop.id ? 'Đang đưa lên...' : 'Đưa ra Trang chủ'}</span>
+                                                        <span>{publishingId === prop.id ? 'Đang đăng...' : 'Đưa ra Trang chủ'}</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -807,7 +827,6 @@ export default function SummaryPage() {
                 </div>
             </div>
 
-            {/* Footer */}
             <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-1 bg-white">
                 <p className="text-slate-400">
                     Đại học Bách khoa Hà Nội • Bản quyền © 2026
@@ -817,14 +836,14 @@ export default function SummaryPage() {
                 </p>
             </footer>
 
-            {/* MODAL 1: THÊM HOẠT ĐỘNG TỰ ĐỘNG GHI NHẬN */}
+            {/* MODAL 1: THÊM HOẠT ĐỘNG MỚI */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                     <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
                             <div>
-                                <h2 className="text-base font-bold text-[#001C44]">Thêm hoạt động tự động ghi nhận</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">Hoạt động đã được BTK phê duyệt trước tiêu chí và hiển thị trực tiếp ra Trang chủ.</p>
+                                <h2 className="text-base font-bold text-[#001C44]">Thêm hoạt động lên hệ thống</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Chọn trạng thái để phân loại tự động ghi nhận hoặc chờ xét cuối năm.</p>
                             </div>
                             <button
                                 type="button"
@@ -842,7 +861,7 @@ export default function SummaryPage() {
                                     <input
                                         type="text"
                                         required
-                                        placeholder="VD: Hội nghị Nghiên cứu Khoa học Sinh viên lần thứ 42..."
+                                        placeholder="VD: Hội nghị Nghiên cứu Khoa học Sinh viên..."
                                         value={officialForm.title}
                                         onChange={(e) => setOfficialForm({ ...officialForm, title: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
@@ -851,24 +870,24 @@ export default function SummaryPage() {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Phân loại trạng thái *</label>
+                                        <select
+                                            value={officialForm.status}
+                                            onChange={(e) => setOfficialForm({ ...officialForm, status: e.target.value as any })}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776] font-semibold text-[#0C5776]"
+                                        >
+                                            <option value="APPROVED">🟢 BTK công nhận (Tự động ghi nhận)</option>
+                                            <option value="PENDING">🟡 Đang diễn ra bên ngoài (Chờ xét cuối năm)</option>
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Đơn vị tổ chức *</label>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="VD: Hội Sinh viên ĐHBK Hà Nội/ CLB..."
+                                            placeholder="VD: Đoàn trường/khoa..."
                                             value={officialForm.organizer}
                                             onChange={(e) => setOfficialForm({ ...officialForm, organizer: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block font-semibold mb-1 text-[#001C44]">Đối tượng tham gia *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="VD: Toàn thể sinh viên Bách khoa"
-                                            value={officialForm.target_audience}
-                                            onChange={(e) => setOfficialForm({ ...officialForm, target_audience: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
                                         />
                                     </div>
@@ -967,34 +986,12 @@ export default function SummaryPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (nếu có)</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={officialForm.registration_deadline}
-                                            onChange={(e) => setOfficialForm({ ...officialForm, registration_deadline: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block font-semibold mb-1 text-[#001C44]">Địa điểm tổ chức</label>
-                                        <input
-                                            type="text"
-                                            placeholder="VD: Hội trường C2/ Sân C1..."
-                                            value={officialForm.location}
-                                            onChange={(e) => setOfficialForm({ ...officialForm, location: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
-                                        />
-                                    </div>
-                                </div>
-
                                 <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Cách thức minh chứng *</label>
                                     <input
                                         type="text"
                                         required
-                                        placeholder="VD: Giấy chứng nhận tham gia / Ảnh check-in mã QR..."
+                                        placeholder="VD: Giấy chứng nhận / Ảnh check-in mã QR..."
                                         value={officialForm.proof_method}
                                         onChange={(e) => setOfficialForm({ ...officialForm, proof_method: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
@@ -1002,7 +999,7 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Link bài viết/ đề án chi tiết</label>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Link bài viết / đề án chi tiết</label>
                                     <input
                                         type="url"
                                         placeholder="https://facebook.com/..."
@@ -1019,14 +1016,14 @@ export default function SummaryPage() {
                                     onClick={() => setIsAddModalOpen(false)}
                                     className="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition-colors text-xs"
                                 >
-                                    Hủy bỏ
+                                    Hủy
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={creating}
                                     className="px-5 py-2 bg-[#0C5776] text-white font-semibold rounded-lg hover:bg-[#001C44] transition-colors disabled:opacity-50 text-xs shadow-sm"
                                 >
-                                    {creating ? 'Đang đăng...' : 'Đăng lên Trang chủ ngay'}
+                                    {creating ? 'Đang lưu...' : 'Lưu hoạt động'}
                                 </button>
                             </div>
                         </form>
@@ -1034,14 +1031,14 @@ export default function SummaryPage() {
                 </div>
             )}
 
-            {/* MODAL 2: CHỈNH SỬA HOẠT ĐỘNG TỰ ĐỘNG GHI NHẬN */}
+            {/* MODAL 2: CHỈNH SỬA HOẠT ĐỘNG */}
             {isEditModalOpen && editingActivity && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                     <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
                             <div>
-                                <h2 className="text-base font-bold text-[#001C44]">Chỉnh sửa hoạt động tự động ghi nhận</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">Thay đổi thông tin sẽ cập nhật trực tiếp ngoài Trang chủ.</p>
+                                <h2 className="text-base font-bold text-[#001C44]">Chỉnh sửa thông tin hoạt động</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Dữ liệu sẽ đồng bộ tự động sang hồ sơ của các sinh viên tham gia.</p>
                             </div>
                             <button
                                 type="button"
@@ -1067,21 +1064,24 @@ export default function SummaryPage() {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Trạng thái duyệt</label>
+                                        <select
+                                            value={editingActivity.status || 'APPROVED'}
+                                            onChange={(e) => setEditingActivity({ ...editingActivity, status: e.target.value as any })}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776] font-semibold text-[#0C5776]"
+                                        >
+                                            <option value="APPROVED">🟢 BTK công nhận</option>
+                                            <option value="PENDING">🟡 Chờ xét cuối năm</option>
+                                            <option value="REJECTED">🔴 Loại (Không công nhận)</option>
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Đơn vị tổ chức *</label>
                                         <input
                                             type="text"
                                             required
                                             value={editingActivity.organizer}
                                             onChange={(e) => setEditingActivity({ ...editingActivity, organizer: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block font-semibold mb-1 text-[#001C44]">Đối tượng tham gia</label>
-                                        <input
-                                            type="text"
-                                            value={editingActivity.target_audience || ''}
-                                            onChange={(e) => setEditingActivity({ ...editingActivity, target_audience: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
                                         />
                                     </div>
@@ -1182,16 +1182,6 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Địa điểm tổ chức</label>
-                                    <input
-                                        type="text"
-                                        value={editingActivity.location || ''}
-                                        onChange={(e) => setEditingActivity({ ...editingActivity, location: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
-                                    />
-                                </div>
-
-                                <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Cách thức minh chứng</label>
                                     <input
                                         type="text"
@@ -1202,7 +1192,7 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Link bài viết/ đề án</label>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Link bài viết / đề án</label>
                                     <input
                                         type="url"
                                         value={editingActivity.project_url || ''}
@@ -1218,7 +1208,7 @@ export default function SummaryPage() {
                                     onClick={() => setIsEditModalOpen(false)}
                                     className="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition-colors text-xs"
                                 >
-                                    Hủy bỏ
+                                    Hủy
                                 </button>
                                 <button
                                     type="submit"
