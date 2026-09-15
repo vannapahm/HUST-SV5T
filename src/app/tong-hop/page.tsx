@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     Download, ExternalLink, Calendar, MapPin, Building2, User,
     Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil,
-    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw, Eye
+    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw, Eye, Lock, LogOut, ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from "@/data/criteria";
@@ -78,17 +78,25 @@ const CRITERIA_MAP: Record<string, string> = {
 const PROPOSAL_STATUS: Record<string, { label: string; badgeClass: string }> = {
     PENDING: { label: 'Mới tiếp nhận', badgeClass: 'bg-amber-50 text-amber-700 border-amber-300' },
     SUBMITTED: { label: 'Đã gửi đề xuất', badgeClass: 'bg-blue-50 text-blue-700 border-blue-300' },
-    APPROVED: { label: 'BTK công nhận', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
-    REJECTED: { label: 'BTK từ chối', badgeClass: 'bg-rose-50 text-rose-700 border-rose-300' },
+    APPROVED: { label: 'Đã công nhận', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+    REJECTED: { label: 'Từ chối', badgeClass: 'bg-rose-50 text-rose-700 border-rose-300' },
 };
 
 const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
-    APPROVED: { label: '🟢 BTK công nhận (Tự động ghi nhận)', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
-    PENDING: { label: '🟡 Đang diễn ra (Chờ xét cuối năm)', badgeClass: 'bg-amber-50 text-amber-700 border-amber-300' },
-    REJECTED: { label: '🔴 BTK không công nhận (Loại)', badgeClass: 'bg-rose-50 text-rose-700 border-rose-300' },
+    APPROVED: { label: '🟢 Tự động ghi nhận', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+    PENDING: { label: '🟡 Chờ xét duyệt', badgeClass: 'bg-amber-50 text-amber-700 border-amber-300' },
+    REJECTED: { label: '🔴 Không công nhận (Loại)', badgeClass: 'bg-rose-50 text-rose-700 border-rose-300' },
 };
 
+// MẬT KHẨU QUẢN TRỊ VIÊN MẶC ĐỊNH
+const ADMIN_SECRET_KEY = '10012005';
+
 export default function SummaryPage() {
+    // Trạng thái khóa bảo vệ quản trị viên
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [adminKeyInput, setAdminKeyInput] = useState<string>('');
+    const [authError, setAuthError] = useState<string>('');
+
     const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS' | 'STUDENTS'>('ACTIVITIES');
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -132,6 +140,18 @@ export default function SummaryPage() {
         status: 'APPROVED' as 'APPROVED' | 'PENDING',
     });
 
+    // Kiểm tra phiên đăng nhập đã lưu trong sessionStorage
+    useEffect(() => {
+        try {
+            const isAuth = sessionStorage.getItem('sv5t_admin_authenticated');
+            if (isAuth === 'true') {
+                setIsAuthenticated(true);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }, []);
+
     const fetchProposals = async () => {
         const { data, error } = await supabase
             .from('proposals')
@@ -167,23 +187,44 @@ export default function SummaryPage() {
     };
 
     useEffect(() => {
-        loadData();
+        if (isAuthenticated) {
+            loadData();
 
-        const handleOnline = () => loadData();
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') loadData();
-        };
+            const handleOnline = () => loadData();
+            const handleVisibilityChange = () => {
+                if (document.visibilityState === 'visible') loadData();
+            };
 
-        window.addEventListener('online', handleOnline);
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('online', handleOnline);
+            document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, []);
+            return () => {
+                window.removeEventListener('online', handleOnline);
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+            };
+        }
+    }, [isAuthenticated]);
 
-    // XÓA / ĐẶT LẠI MÃ PIN KHI SINH VIÊN QUÊN
+    // XỬ LÝ ĐĂNG NHẬP MÃ QUẢN TRỊ VIÊN
+    const handleLoginAdmin = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (adminKeyInput === ADMIN_SECRET_KEY) {
+            sessionStorage.setItem('sv5t_admin_authenticated', 'true');
+            setIsAuthenticated(true);
+            setAuthError('');
+        } else {
+            setAuthError('Mã quản trị viên không chính xác! Vui lòng thử lại.');
+        }
+    };
+
+    // ĐĂNG XUẤT / KHÓA BẢN QUẢN TRỊ
+    const handleLogoutAdmin = () => {
+        sessionStorage.removeItem('sv5t_admin_authenticated');
+        setIsAuthenticated(false);
+        setAdminKeyInput('');
+    };
+
+    // XÓA / ĐẶT LẠI MÃ PIN CHO SINH VIÊN KHI QUÊN
     const handleResetPin = async (mssv: string) => {
         const confirmReset = confirm(
             `Xác nhận xóa mã PIN của MSSV: ${mssv}?\nSau khi xóa, sinh viên sẽ được yêu cầu tạo mã PIN 6 số mới trong lần đăng nhập tới.`
@@ -207,7 +248,7 @@ export default function SummaryPage() {
     const handleActivityStatusChange = async (act: Activity, newStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => {
         const confirmChange = confirm(
             `Xác nhận đổi trạng thái hoạt động "${act.title}" thành:\n` +
-            (newStatus === 'APPROVED' ? 'BTK CÔNG NHẬN' : newStatus === 'PENDING' ? 'CHỜ XÉT CUỐI NĂM' : 'LOẠI / KHÔNG CÔNG NHẬN') +
+            (newStatus === 'APPROVED' ? 'TỰ ĐỘNG GHI NHẬN' : newStatus === 'PENDING' ? 'CHỜ XÉT DUYỆT' : 'LOẠI / KHÔNG CÔNG NHẬN') +
             `\n\nToàn bộ hồ sơ của sinh viên đã tham gia hoạt động này sẽ được tự động cập nhật đồng bộ.`
         );
         if (!confirmChange) return;
@@ -231,7 +272,6 @@ export default function SummaryPage() {
             prev.map((item) => (item.id === act.id ? { ...item, status: newStatus } : item))
         );
 
-        // Cập nhật dữ liệu hoạt động sinh viên đang mở xem
         setAllStudentActivities((prev) =>
             prev.map((item) => item.activity_title === act.title ? { ...item, status: newStatus } : item)
         );
@@ -446,7 +486,7 @@ export default function SummaryPage() {
 
         if (newStatus === 'APPROVED') {
             const confirmPublish = confirm(
-                `BTK đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này lên Trang chủ ngay không?`
+                `Đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này lên Trang chủ ngay không?`
             );
 
             if (confirmPublish) {
@@ -505,18 +545,93 @@ export default function SummaryPage() {
         return filterStandard === 'ALL' ? true : act.supported_standard === filterStandard;
     });
 
-    // Lọc danh sách sinh viên theo ô tìm kiếm
     const filteredStudents = useMemo(() => {
         if (!studentSearchMssv.trim()) return studentProfiles;
         return studentProfiles.filter((p) => p.student_id.includes(studentSearchMssv.trim()));
     }, [studentProfiles, studentSearchMssv]);
 
-    // Lấy hoạt động của sinh viên đang được chọn xem chi tiết
     const studentDetailActivities = useMemo(() => {
         if (!selectedStudentDetail) return [];
         return allStudentActivities.filter((a) => a.student_id === selectedStudentDetail);
     }, [selectedStudentDetail, allStudentActivities]);
 
+    // =========================================================================
+    // NẾU CHƯA MỞ KHÓA MÃ QUẢN TRỊ VIÊN: HIỂN THỊ MÀN HÌNH KHÓA
+    // =========================================================================
+    if (!isAuthenticated) {
+        return (
+            <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
+                <div>
+                    <header className="bg-[#001C44] text-white border-b border-[#0C5776] shadow-sm">
+                        <div className="max-w-5xl mx-auto px-4 py-6">
+                            <Link
+                                href="/"
+                                className="inline-flex items-center gap-1.5 text-xs text-[#BCFEFE] hover:underline"
+                            >
+                                <ArrowLeft className="w-3.5 h-3.5" />
+                                Về Trang chủ
+                            </Link>
+                            <h1 className="text-xl sm:text-2xl font-bold mt-2">
+                                Bàn làm việc Quản trị viên
+                            </h1>
+                        </div>
+                    </header>
+
+                    <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-150">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-6">
+                            <div className="w-16 h-16 bg-[#0C5776]/10 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
+                                <Lock className="w-8 h-8" />
+                            </div>
+
+                            <div>
+                                <h2 className="text-lg font-bold text-[#001C44]">Xác thực quyền Quản trị</h2>
+                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                    Vui lòng nhập mã bảo mật Quản trị viên để truy cập bảng điều khiển và hồ sơ sinh viên.
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleLoginAdmin} className="space-y-4">
+                                <input
+                                    type="password"
+                                    required
+                                    autoFocus
+                                    placeholder="Nhập mã quản trị..."
+                                    value={adminKeyInput}
+                                    onChange={(e) => setAdminKeyInput(e.target.value)}
+                                    className="w-full px-4 py-3 text-lg text-center font-bold tracking-widest border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white"
+                                />
+
+                                {authError && (
+                                    <p className="text-xs text-rose-600 font-medium">{authError}</p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    className="w-full py-3 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                                >
+                                    <span>Mở khóa bàn làm việc</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-1 bg-white">
+                    <p className="text-slate-400">
+                        Đại học Bách khoa Hà Nội • Bản quyền © 2026
+                    </p>
+                    <p className="text-[#0C5776] pt-1">
+                        Xây dựng và phát triển bởi <span className="font-semibold text-[#001C44]">Phạm Thị Vân Anh</span>
+                    </p>
+                </footer>
+            </main>
+        );
+    }
+
+    // =========================================================================
+    // NẾU ĐÃ XÁC THỰC: HIỂN THỊ BÀN LÀM VIỆC QUẢN TRỊ VIÊN
+    // =========================================================================
     return (
         <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
             <div>
@@ -532,10 +647,10 @@ export default function SummaryPage() {
                                     Về Trang chủ
                                 </Link>
                                 <h1 className="text-xl sm:text-2xl font-bold">
-                                    Tổng hợp hoạt động xét chọn SV5T
+                                    Bàn làm việc Quản trị viên
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Quản trị viên: Phê duyệt, điều chỉnh trạng thái và tra cứu hồ sơ sinh viên toàn hệ thống.
+                                    Quản trị: Phê duyệt, điều chỉnh trạng thái và quản lý hồ sơ sinh viên toàn hệ thống.
                                 </p>
                             </div>
 
@@ -554,6 +669,16 @@ export default function SummaryPage() {
                                 >
                                     <Download className="w-4 h-4" />
                                     Xuất Excel (CSV)
+                                </button>
+
+                                {/* Nút khóa trang quản trị */}
+                                <button
+                                    onClick={handleLogoutAdmin}
+                                    title="Khóa bàn làm việc Quản trị viên"
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-rose-600 text-white text-xs font-semibold transition-all border border-white/20"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Khóa trang</span>
                                 </button>
                             </div>
                         </div>
@@ -637,8 +762,8 @@ export default function SummaryPage() {
                                             <option value="ALL">Tất cả</option>
                                             <option value="PENDING">🟡 Mới tiếp nhận</option>
                                             <option value="SUBMITTED">🔵 Đã gửi đề xuất</option>
-                                            <option value="APPROVED">🟢 BTK công nhận</option>
-                                            <option value="REJECTED">🔴 BTK từ chối</option>
+                                            <option value="APPROVED">🟢 Đã công nhận</option>
+                                            <option value="REJECTED">🔴 Từ chối</option>
                                         </select>
                                     </div>
                                 )}
@@ -700,8 +825,8 @@ export default function SummaryPage() {
                                                         onChange={(e) => handleActivityStatusChange(act, e.target.value as any)}
                                                         className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${statusConfig.badgeClass}`}
                                                     >
-                                                        <option value="APPROVED">🟢 BTK công nhận</option>
-                                                        <option value="PENDING">🟡 Chờ xét cuối năm</option>
+                                                        <option value="APPROVED">🟢 Tự động ghi nhận</option>
+                                                        <option value="PENDING">🟡 Chờ xét duyệt</option>
                                                         <option value="REJECTED">🔴 Loại (Không công nhận)</option>
                                                     </select>
 
@@ -828,8 +953,8 @@ export default function SummaryPage() {
                                                     >
                                                         <option value="PENDING">🟡 Mới tiếp nhận</option>
                                                         <option value="SUBMITTED">🔵 Đã gửi đề xuất</option>
-                                                        <option value="APPROVED">🟢 BTK công nhận</option>
-                                                        <option value="REJECTED">🔴 BTK từ chối</option>
+                                                        <option value="APPROVED">🟢 Đã công nhận</option>
+                                                        <option value="REJECTED">🔴 Từ chối</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -941,7 +1066,7 @@ export default function SummaryPage() {
                                                 <tr>
                                                     <th className="px-4 py-3">STT</th>
                                                     <th className="px-4 py-3">MSSV</th>
-                                                    <th className="px-4 py-3">Mã PIN</th>
+                                                    <th className="px-4 py-3">Mã PIN (6 số)</th>
                                                     <th className="px-4 py-3 text-center">Hoạt động đã lưu</th>
                                                     <th className="px-4 py-3 text-center">Tiêu chí công nhận</th>
                                                     <th className="px-4 py-3 text-right">Thao tác</th>
@@ -1112,8 +1237,8 @@ export default function SummaryPage() {
                                             onChange={(e) => setOfficialForm({ ...officialForm, status: e.target.value as any })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776] font-semibold text-[#0C5776]"
                                         >
-                                            <option value="APPROVED">🟢 BTK công nhận (Tự động ghi nhận)</option>
-                                            <option value="PENDING">🟡 Đang diễn ra bên ngoài (Chờ xét cuối năm)</option>
+                                            <option value="APPROVED">🟢 Tự động ghi nhận</option>
+                                            <option value="PENDING">🟡 Chờ xét duyệt</option>
                                         </select>
                                     </div>
                                     <div>
@@ -1316,8 +1441,8 @@ export default function SummaryPage() {
                                             onChange={(e) => setEditingActivity({ ...editingActivity, status: e.target.value as any })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776] font-semibold text-[#0C5776]"
                                         >
-                                            <option value="APPROVED">🟢 BTK công nhận</option>
-                                            <option value="PENDING">🟡 Chờ xét cuối năm</option>
+                                            <option value="APPROVED">🟢 Tự động ghi nhận</option>
+                                            <option value="PENDING">🟡 Chờ xét duyệt</option>
                                             <option value="REJECTED">🔴 Loại (Không công nhận)</option>
                                         </select>
                                     </div>
