@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import {
     Download, ExternalLink, Calendar, MapPin, Building2, User,
-    Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil
+    Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil, CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from "@/data/criteria";
@@ -75,7 +75,7 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string }> = {
 };
 
 export default function SummaryPage() {
-    // Quản lý Tab hiển thị: 'ACTIVITIES' (Hoạt động Trang chủ) | 'PROPOSALS' (Đề xuất sinh viên)
+    // Quản lý Tab: 'ACTIVITIES' (Hoạt động tự động ghi nhận) | 'PROPOSALS' (Đề xuất sinh viên)
     const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS'>('ACTIVITIES');
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -86,11 +86,11 @@ export default function SummaryPage() {
 
     const [publishingId, setPublishingId] = useState<string | null>(null);
 
-    // State thêm mới hoạt động chính thức
+    // State thêm mới hoạt động tự động ghi nhận
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [creating, setCreating] = useState(false);
 
-    // State sửa hoạt động chính thức ngoài Trang chủ
+    // State sửa hoạt động tự động ghi nhận
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [updating, setUpdating] = useState(false);
@@ -124,7 +124,7 @@ export default function SummaryPage() {
         }
     };
 
-    // 2. Tải toàn bộ hoạt động đang có trên Trang chủ
+    // 2. Tải danh sách hoạt động tự động ghi nhận trên Trang chủ
     const fetchOfficialActivities = async () => {
         const { data, error } = await supabase
             .from('activities')
@@ -145,7 +145,7 @@ export default function SummaryPage() {
         loadData();
     }, []);
 
-    // Hàm thêm mới hoạt động chính thức
+    // Hàm thêm mới hoạt động tự động ghi nhận
     const handleCreateOfficialActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!officialForm.title || !officialForm.organizer || !officialForm.start_date || !officialForm.criteria_detail) {
@@ -160,7 +160,7 @@ export default function SummaryPage() {
                 title: officialForm.title,
                 organizer: officialForm.organizer,
                 target_audience: officialForm.target_audience,
-                content_description: officialForm.content_description || `Hoạt động chính thức hỗ trợ tiêu chuẩn Sinh viên 5 tốt.`,
+                content_description: officialForm.content_description || `Hoạt động tự động ghi nhận tiêu chuẩn Sinh viên 5 tốt.`,
                 project_url: officialForm.project_url,
                 start_date: officialForm.start_date,
                 end_date: officialForm.end_date || officialForm.start_date,
@@ -178,7 +178,7 @@ export default function SummaryPage() {
         if (error) {
             alert('Lỗi khi thêm hoạt động: ' + error.message);
         } else {
-            alert('Đã đăng hoạt động chính thức lên Trang chủ thành công!');
+            alert('Đã đăng hoạt động tự động ghi nhận lên Trang chủ thành công!');
             setIsAddModalOpen(false);
             setOfficialForm({
                 title: '',
@@ -199,13 +199,13 @@ export default function SummaryPage() {
         }
     };
 
-    // Mở popup Sửa hoạt động chính thức
+    // Mở popup Sửa hoạt động tự động ghi nhận
     const handleOpenEditActivity = (act: Activity) => {
         setEditingActivity({ ...act });
         setIsEditModalOpen(true);
     };
 
-    // Lưu chỉnh sửa hoạt động chính thức
+    // Lưu chỉnh sửa hoạt động tự động ghi nhận
     const handleUpdateActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingActivity) return;
@@ -241,12 +241,12 @@ export default function SummaryPage() {
             prev.map((item) => (item.id === editingActivity.id ? editingActivity : item))
         );
         setIsEditModalOpen(false);
-        alert('Đã lưu thay đổi hoạt động thành công!');
+        alert('Đã lưu thay đổi hoạt động tự động ghi nhận thành công!');
     };
 
-    // Xóa hoạt động chính thức ngoài Trang chủ
+    // Xóa hoạt động tự động ghi nhận khỏi Trang chủ
     const handleDeleteOfficialActivity = async (id: string | number, title: string) => {
-        const confirmDelete = confirm(`Bạn có chắc chắn muốn xóa hoạt động:\n"${title}"\nkhỏi Trang chủ không?`);
+        const confirmDelete = confirm(`Bạn có chắc chắn muốn xóa hoạt động tự động ghi nhận:\n"${title}"\nkhỏi Trang chủ không?`);
         if (!confirmDelete) return;
 
         const { error } = await supabase.from('activities').delete().eq('id', id);
@@ -257,7 +257,7 @@ export default function SummaryPage() {
         }
 
         setOfficialActivities((prev) => prev.filter((a) => a.id !== id));
-        alert('Đã xóa hoạt động khỏi Trang chủ thành công!');
+        alert('Đã gỡ hoạt động tự động ghi nhận khỏi Trang chủ!');
     };
 
     // Xóa đề xuất sinh viên
@@ -280,7 +280,7 @@ export default function SummaryPage() {
     // Đưa hoạt động từ đề xuất ra Trang chủ
     const handlePublishToHome = async (prop: Proposal) => {
         const confirmPublish = confirm(
-            `Đăng hoạt động "${prop.activity_title}" ra ngoài Trang chủ ngay bây giờ để các bạn sinh viên theo dõi?`
+            `Đăng hoạt động "${prop.activity_title}" vào danh mục "Hoạt động tự động ghi nhận" ngoài Trang chủ để sinh viên theo dõi?`
         );
         if (!confirmPublish) return;
 
@@ -307,9 +307,9 @@ export default function SummaryPage() {
         setPublishingId(null);
 
         if (error) {
-            alert('Có lỗi khi đăng lên trang chủ: ' + error.message);
+            alert('Có lỗi khi đưa lên Trang chủ: ' + error.message);
         } else {
-            alert('Đã đăng lên Trang chủ thành công!');
+            alert('Đã đưa vào danh mục Hoạt động tự động ghi nhận trên Trang chủ thành công!');
             fetchOfficialActivities();
         }
     };
@@ -341,7 +341,7 @@ export default function SummaryPage() {
 
         if (newStatus === 'APPROVED') {
             const confirmPublish = confirm(
-                `BTK đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này hiển thị ngoài Trang chủ ngay không?`
+                `BTK đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này thành Hoạt động tự động ghi nhận ngoài Trang chủ ngay không?`
             );
 
             if (confirmPublish) {
@@ -363,7 +363,7 @@ export default function SummaryPage() {
                 ]);
 
                 if (!insertError) {
-                    alert('Đã đồng bộ lên danh sách hoạt động ngoài Trang chủ thành công!');
+                    alert('Đã đưa vào danh mục Hoạt động tự động ghi nhận ngoài Trang chủ thành công!');
                     fetchOfficialActivities();
                 }
             }
@@ -440,7 +440,7 @@ export default function SummaryPage() {
                                     Tổng hợp hoạt động xét chọn SV5T
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Quản trị viên: Quản lý, chỉnh sửa hoặc xóa trực tiếp các hoạt động trên Trang chủ và duyệt đề xuất.
+                                    Quản lý danh mục hoạt động tự động ghi nhận và theo dõi các đề xuất từ sinh viên.
                                 </p>
                             </div>
 
@@ -450,7 +450,7 @@ export default function SummaryPage() {
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-[#001C44] text-xs font-semibold hover:bg-[#BCFEFE] transition-all shadow-sm"
                                 >
                                     <PlusCircle className="w-4 h-4 text-[#0C5776]" />
-                                    Thêm hoạt động chính thức
+                                    Thêm hoạt động tự động ghi nhận
                                 </button>
 
                                 <button
@@ -465,7 +465,7 @@ export default function SummaryPage() {
                     </div>
                 </header>
 
-                {/* 2 TAB QUẢN LÝ CHÍNH */}
+                {/* 2 TAB QUẢN LÝ */}
                 <div className="max-w-5xl mx-auto px-4 mt-6">
                     <div className="flex border-b border-slate-200 gap-4 mb-4">
                         <button
@@ -476,7 +476,7 @@ export default function SummaryPage() {
                                 }`}
                         >
                             <Globe className="w-4 h-4 text-[#0C5776]" />
-                            Hoạt động chính thức (Trang chủ)
+                            Hoạt động tự động ghi nhận
                             <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-[#0C5776] font-bold">
                                 {officialActivities.length}
                             </span>
@@ -541,14 +541,21 @@ export default function SummaryPage() {
                         </div>
                     </div>
 
-                    {/* ======================= TAB 1: HOẠT ĐỘNG TRANG CHỦ ======================= */}
+                    {/* ======================= TAB 1: HOẠT ĐỘNG TỰ ĐỘNG GHI NHẬN ======================= */}
                     {activeTab === 'ACTIVITIES' && (
                         <div className="space-y-4">
+                            <div className="bg-[#BCFEFE]/15 border border-[#2D99AE]/30 rounded-xl p-3 text-xs text-[#001C44] flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-[#0C5776] shrink-0" />
+                                <span>
+                                    Danh mục các hoạt động đã được <strong>BTK HSV Đại học phê duyệt trước tiêu chí</strong>. Sinh viên tham gia sẽ được tính nhận diện tự động, không cần làm đơn đề xuất.
+                                </span>
+                            </div>
+
                             {loading ? (
                                 <div className="py-12 text-center text-xs text-slate-500">Đang tải danh sách hoạt động...</div>
                             ) : filteredActivities.length === 0 ? (
                                 <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-xs">
-                                    Chưa có hoạt động nào phù hợp.
+                                    Chưa có hoạt động tự động ghi nhận nào phù hợp.
                                 </div>
                             ) : (
                                 filteredActivities.map((act) => (
@@ -589,7 +596,7 @@ export default function SummaryPage() {
                                                     className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
-                                                    <span>Xóa khỏi Trang chủ</span>
+                                                    <span>Xóa</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -789,14 +796,14 @@ export default function SummaryPage() {
                 </p>
             </footer>
 
-            {/* MODAL 1: THÊM HOẠT ĐỘNG CHÍNH THỨC */}
+            {/* MODAL 1: THÊM HOẠT ĐỘNG TỰ ĐỘNG GHI NHẬN */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                     <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
                             <div>
-                                <h2 className="text-base font-bold text-[#001C44]">Thêm hoạt động chính thức trong ĐHBKHN</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">Hoạt động đã được BTK phê duyệt và hiển thị trực tiếp ra Trang chủ.</p>
+                                <h2 className="text-base font-bold text-[#001C44]">Thêm hoạt động tự động ghi nhận</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Hoạt động đã được BTK phê duyệt trước tiêu chí và hiển thị trực tiếp ra Trang chủ.</p>
                             </div>
                             <button
                                 type="button"
@@ -1006,13 +1013,13 @@ export default function SummaryPage() {
                 </div>
             )}
 
-            {/* MODAL 2: CHỈNH SỬA HOẠT ĐỘNG CHÍNH THỨC */}
+            {/* MODAL 2: CHỈNH SỬA HOẠT ĐỘNG TỰ ĐỘNG GHI NHẬN */}
             {isEditModalOpen && editingActivity && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                     <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
                             <div>
-                                <h2 className="text-base font-bold text-[#001C44]">Chỉnh sửa hoạt động Trang chủ</h2>
+                                <h2 className="text-base font-bold text-[#001C44]">Chỉnh sửa hoạt động tự động ghi nhận</h2>
                                 <p className="text-xs text-slate-500 mt-0.5">Thay đổi thông tin sẽ cập nhật trực tiếp ngoài Trang chủ.</p>
                             </div>
                             <button
