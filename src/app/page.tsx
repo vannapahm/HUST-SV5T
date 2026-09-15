@@ -249,8 +249,8 @@ export default function HomePage() {
                 <button
                   onClick={() => setSelectedStatus('ALL')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStatus === 'ALL'
-                      ? 'bg-[#001C44] text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-[#001C44] text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                 >
                   Tất cả ({activities.length})
@@ -258,8 +258,8 @@ export default function HomePage() {
                 <button
                   onClick={() => setSelectedStatus('APPROVED')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${selectedStatus === 'APPROVED'
-                      ? 'bg-emerald-700 text-white shadow-xs'
-                      : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
                     }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -268,8 +268,8 @@ export default function HomePage() {
                 <button
                   onClick={() => setSelectedStatus('PENDING')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${selectedStatus === 'PENDING'
-                      ? 'bg-amber-700 text-white shadow-xs'
-                      : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                    ? 'bg-amber-700 text-white shadow-xs'
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
                     }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
@@ -326,10 +326,10 @@ export default function HomePage() {
                   <div
                     key={act.id}
                     className={`bg-white border rounded-xl p-5 shadow-xs space-y-3.5 transition-all ${isRejected
-                        ? 'border-rose-200 bg-rose-50/15'
-                        : isPending
-                          ? 'border-amber-200/80 hover:border-amber-300'
-                          : 'border-slate-200 hover:border-[#2D99AE]/60'
+                      ? 'border-rose-200 bg-rose-50/15'
+                      : isPending
+                        ? 'border-amber-200/80 hover:border-amber-300'
+                        : 'border-slate-200 hover:border-[#2D99AE]/60'
                       }`}
                   >
                     {/* Hàng 1: Tiêu chuẩn, Cấp xét, Hạn đăng ký nhấp nháy & Huy hiệu trạng thái */}
@@ -456,7 +456,7 @@ export default function HomePage() {
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-xs text-[#0C5776] hover:text-[#001C44] font-semibold underline"
                         >
-                          Xem chi tiết đề án / bài viết
+                          Xem chi tiết đề án/ bài viết
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       ) : (
