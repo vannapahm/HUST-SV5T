@@ -890,7 +890,7 @@ export default function StudentPortfolioPage() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block font-semibold mb-1">Lớp *</label>
+                                            <label className="block font-semibold mb-1">Lớp</label>
                                             <input
                                                 type="text"
                                                 required
@@ -901,7 +901,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Trường/Khoa *</label>
+                                            <label className="block font-semibold mb-1">Trường/Khoa</label>
                                             <select
                                                 value={academicData.faculty_name}
                                                 onChange={(e) => setAcademicData({ ...academicData, faculty_name: e.target.value })}
@@ -927,7 +927,7 @@ export default function StudentPortfolioPage() {
                                             <span className="text-[10px] text-slate-400 block mt-0.5">Không có ghi Không</span>
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Số điện thoại *</label>
+                                            <label className="block font-semibold mb-1">Số điện thoại</label>
                                             <input
                                                 type="text"
                                                 required
@@ -938,7 +938,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Email SIS *</label>
+                                            <label className="block font-semibold mb-1">Email SIS</label>
                                             <div className="flex rounded-lg border border-slate-300 overflow-hidden bg-white focus-within:border-[#0C5776]">
                                                 <input
                                                     type="text"
