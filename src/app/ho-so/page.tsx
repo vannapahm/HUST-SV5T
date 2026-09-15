@@ -859,28 +859,31 @@ export default function StudentPortfolioPage() {
                                             <label className="block font-semibold mb-1">Năm sinh *</label>
                                             <input
                                                 type="text"
+                                                required
                                                 placeholder="VD: 2005"
                                                 value={academicData.birth_year}
                                                 onChange={(e) => setAcademicData({ ...academicData, birth_year: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                             />
                                         </div>
                                         <div>
                                             <label className="block font-semibold mb-1">Dân tộc *</label>
                                             <input
                                                 type="text"
+                                                required
                                                 placeholder="VD: Kinh"
                                                 value={academicData.ethnicity}
                                                 onChange={(e) => setAcademicData({ ...academicData, ethnicity: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                             />
                                         </div>
                                         <div>
                                             <label className="block font-semibold mb-1">Năm học thứ *</label>
                                             <select
+                                                required
                                                 value={academicData.student_year}
                                                 onChange={(e) => setAcademicData({ ...academicData, student_year: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                             >
                                                 <option value="1">1</option>
                                                 <option value="2">2</option>
@@ -892,9 +895,10 @@ export default function StudentPortfolioPage() {
                                         <div>
                                             <label className="block font-semibold mb-1">Đoàn viên/ Đảng viên *</label>
                                             <select
+                                                required
                                                 value={academicData.union_status}
                                                 onChange={(e) => setAcademicData({ ...academicData, union_status: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                             >
                                                 <option value="Đảng viên">Đảng viên</option>
                                                 <option value="Đoàn viên">Đoàn viên</option>
@@ -917,9 +921,10 @@ export default function StudentPortfolioPage() {
                                         <div>
                                             <label className="block font-semibold mb-1">Trường/ Khoa *</label>
                                             <select
+                                                required
                                                 value={academicData.faculty_name}
                                                 onChange={(e) => setAcademicData({ ...academicData, faculty_name: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-semibold text-[#0C5776]"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-semibold text-[#0C5776] focus:outline-none focus:border-[#0C5776]"
                                             >
                                                 {FACULTIES.map((fac) => (
                                                     <option key={fac} value={fac}>{fac}</option>
@@ -928,30 +933,31 @@ export default function StudentPortfolioPage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <div>
+                                    {/* Chia tỷ lệ 12 cột: Chức vụ (4) - SĐT (3, co ngắn lại) - Email SIS (5, mở rộng chiều rộng) */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                                        <div className="sm:col-span-4">
                                             <label className="block font-semibold mb-1">Chức vụ Đoàn - Hội *</label>
                                             <input
                                                 type="text"
-                                                placeholder="VD: Chi hội Trưởng..."
+                                                required
+                                                placeholder='VD: Chi hội trưởng (hoặc ghi "Không")'
                                                 value={academicData.position}
                                                 onChange={(e) => setAcademicData({ ...academicData, position: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                             />
-                                            <span className="text-[10px] text-slate-400 block mt-0.5">Không có ghi "Không"</span>
                                         </div>
-                                        <div>
+                                        <div className="sm:col-span-3">
                                             <label className="block font-semibold mb-1">Số điện thoại *</label>
                                             <input
-                                                type="text"
+                                                type="tel"
                                                 required
                                                 placeholder="VD: 0912345678"
                                                 value={academicData.phone}
                                                 onChange={(e) => setAcademicData({ ...academicData, phone: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                             />
                                         </div>
-                                        <div>
+                                        <div className="sm:col-span-5">
                                             <label className="block font-semibold mb-1">Email SIS *</label>
                                             <div className="flex rounded-lg border border-slate-300 overflow-hidden bg-white focus-within:border-[#0C5776]">
                                                 <input
