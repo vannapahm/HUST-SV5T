@@ -88,15 +88,16 @@ const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
     REJECTED: { label: '🔴 Không công nhận (Loại)', badgeClass: 'bg-rose-50 text-rose-700 border-rose-300' },
 };
 
-// MẬT KHẨU QUẢN TRỊ VIÊN MẶC ĐỊNH
 const ADMIN_SECRET_KEY = '10012005';
 
 export default function SummaryPage() {
-    // Trạng thái khóa bảo vệ quản trị viên
+    // Trạng thái kiểm tra quyền truy cập (ngăn chặn chớp nháy)
+    const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [adminKeyInput, setAdminKeyInput] = useState<string>('');
     const [authError, setAuthError] = useState<string>('');
 
+    // Tab đang chọn (mặc định lấy từ lưu trữ phiên)
     const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS' | 'STUDENTS'>('ACTIVITIES');
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -116,7 +117,7 @@ export default function SummaryPage() {
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [updating, setUpdating] = useState(false);
 
-    // State danh sách hồ sơ sinh viên (Tab 3)
+    // Dữ liệu hồ sơ sinh viên (Tab 3)
     const [studentProfiles, setStudentProfiles] = useState<StudentProfile[]>([]);
     const [allStudentActivities, setAllStudentActivities] = useState<StudentActivityItem[]>([]);
     const [studentSearchMssv, setStudentSearchMssv] = useState('');
@@ -140,15 +141,22 @@ export default function SummaryPage() {
         status: 'APPROVED' as 'APPROVED' | 'PENDING',
     });
 
-    // Kiểm tra phiên đăng nhập đã lưu trong sessionStorage
+    // 1. KIỂM TRA PHIÊN VÀ PHỤC HỒI TAB TRƯỚC KHI RENDER
     useEffect(() => {
         try {
             const isAuth = sessionStorage.getItem('sv5t_admin_authenticated');
             if (isAuth === 'true') {
                 setIsAuthenticated(true);
             }
+
+            const savedTab = sessionStorage.getItem('sv5t_admin_active_tab') as any;
+            if (savedTab && ['ACTIVITIES', 'PROPOSALS', 'STUDENTS'].includes(savedTab)) {
+                setActiveTab(savedTab);
+            }
         } catch (e) {
             console.error(e);
+        } finally {
+            setIsAuthChecking(false);
         }
     }, []);
 
@@ -205,7 +213,13 @@ export default function SummaryPage() {
         }
     }, [isAuthenticated]);
 
-    // XỬ LÝ ĐĂNG NHẬP MÃ QUẢN TRỊ VIÊN
+    // HÀM CHUYỂN TAB VÀ LƯU VÀO BỘ NHỚ DUY TRÌ KHI F5
+    const handleTabChange = (tab: 'ACTIVITIES' | 'PROPOSALS' | 'STUDENTS') => {
+        setActiveTab(tab);
+        sessionStorage.setItem('sv5t_admin_active_tab', tab);
+    };
+
+    // ĐĂNG NHẬP MẬT KHẨU QUẢN TRỊ VIÊN
     const handleLoginAdmin = (e: React.FormEvent) => {
         e.preventDefault();
         if (adminKeyInput === ADMIN_SECRET_KEY) {
@@ -213,21 +227,22 @@ export default function SummaryPage() {
             setIsAuthenticated(true);
             setAuthError('');
         } else {
-            setAuthError('Mã quản trị viên không chính xác! Vui lòng thử lại.');
+            setAuthError('Mật khẩu quản trị không chính xác! Vui lòng kiểm tra lại.');
         }
     };
 
-    // ĐĂNG XUẤT / KHÓA BẢN QUẢN TRỊ
+    // ĐĂNG XUẤT / KHÓA TRANG
     const handleLogoutAdmin = () => {
         sessionStorage.removeItem('sv5t_admin_authenticated');
+        sessionStorage.removeItem('sv5t_admin_active_tab');
         setIsAuthenticated(false);
         setAdminKeyInput('');
     };
 
-    // XÓA / ĐẶT LẠI MÃ PIN CHO SINH VIÊN KHI QUÊN
+    // ĐẶT LẠI MẬT KHẨU CHO SINH VIÊN
     const handleResetPin = async (mssv: string) => {
         const confirmReset = confirm(
-            `Xác nhận xóa mã PIN của MSSV: ${mssv}?\nSau khi xóa, sinh viên sẽ được yêu cầu tạo mã PIN 6 số mới trong lần đăng nhập tới.`
+            `Xác nhận đặt lại mật khẩu cho MSSV: ${mssv}?\nSau khi đặt lại, sinh viên sẽ được yêu cầu tạo mật khẩu 6 số mới trong lần đăng nhập tới.`
         );
         if (!confirmReset) return;
 
@@ -239,7 +254,7 @@ export default function SummaryPage() {
         if (error) {
             alert('Lỗi: ' + error.message);
         } else {
-            alert(`Đã xóa mã PIN của MSSV ${mssv}! Sinh viên có thể tạo lại mã mới.`);
+            alert(`Đã đặt lại mật khẩu của MSSV ${mssv}! Sinh viên có thể tạo lại mật khẩu mới.`);
             setStudentProfiles((prev) => prev.filter((p) => p.student_id !== mssv));
         }
     };
@@ -556,7 +571,21 @@ export default function SummaryPage() {
     }, [selectedStudentDetail, allStudentActivities]);
 
     // =========================================================================
-    // NẾU CHƯA MỞ KHÓA MÃ QUẢN TRỊ VIÊN: HIỂN THỊ MÀN HÌNH KHÓA
+    // 1. KHI ĐANG KIỂM TRA PHIÊN: HIỂN THỊ TRẠNG THÁI CHỜ MƯỢT MÀ (KHÔNG CHỚP NHÁY)
+    // =========================================================================
+    if (isAuthChecking) {
+        return (
+            <main className="min-h-screen bg-[#f8fafc] flex items-center justify-center text-xs text-slate-400">
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-[#0C5776] border-t-transparent rounded-full animate-spin"></div>
+                    <span>Đang kiểm tra quyền truy cập...</span>
+                </div>
+            </main>
+        );
+    }
+
+    // =========================================================================
+    // 2. NẾU CHƯA XÁC THỰC: HIỂN THỊ FORM KHÓA TRANG QUẢN TRỊ
     // =========================================================================
     if (!isAuthenticated) {
         return (
@@ -586,7 +615,7 @@ export default function SummaryPage() {
                             <div>
                                 <h2 className="text-lg font-bold text-[#001C44]">Xác thực quyền Quản trị</h2>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Vui lòng nhập mã bảo mật Quản trị viên để truy cập bảng điều khiển và hồ sơ sinh viên.
+                                    Nhập mật khẩu quản trị viên để mở khóa bảng điều khiển và hồ sơ sinh viên.
                                 </p>
                             </div>
 
@@ -595,7 +624,7 @@ export default function SummaryPage() {
                                     type="password"
                                     required
                                     autoFocus
-                                    placeholder="Nhập mã quản trị..."
+                                    placeholder="Nhập mật khẩu quản trị..."
                                     value={adminKeyInput}
                                     onChange={(e) => setAdminKeyInput(e.target.value)}
                                     className="w-full px-4 py-3 text-lg text-center font-bold tracking-widest border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white"
@@ -630,7 +659,7 @@ export default function SummaryPage() {
     }
 
     // =========================================================================
-    // NẾU ĐÃ XÁC THỰC: HIỂN THỊ BÀN LÀM VIỆC QUẢN TRỊ VIÊN
+    // 3. KHI ĐÃ XÁC THỰC: HIỂN THỊ TRANG QUẢN TRỊ (GIỮ ĐÚNG TAB KHI F5)
     // =========================================================================
     return (
         <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
@@ -650,7 +679,7 @@ export default function SummaryPage() {
                                     Trang Quản trị
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Quản trị: Phê duyệt, điều chỉnh trạng thái và quản lý hồ sơ sinh viên toàn hệ thống.
+                                    Phê duyệt hoạt động, điều chỉnh trạng thái và quản lý hồ sơ sinh viên toàn hệ thống.
                                 </p>
                             </div>
 
@@ -671,10 +700,9 @@ export default function SummaryPage() {
                                     Xuất Excel (CSV)
                                 </button>
 
-                                {/* Nút khóa trang quản trị */}
                                 <button
                                     onClick={handleLogoutAdmin}
-                                    title="Khóa bàn làm việc Quản trị viên"
+                                    title="Khóa trang quản trị"
                                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-rose-600 text-white text-xs font-semibold transition-all border border-white/20"
                                 >
                                     <LogOut className="w-4 h-4" />
@@ -686,10 +714,10 @@ export default function SummaryPage() {
                 </header>
 
                 <div className="max-w-5xl mx-auto px-4 mt-6">
-                    {/* Thanh 3 Tab */}
+                    {/* Thanh 3 Tab: Tự động lưu và giữ nguyên trạng thái khi F5 */}
                     <div className="flex border-b border-slate-200 gap-4 mb-4">
                         <button
-                            onClick={() => setActiveTab('ACTIVITIES')}
+                            onClick={() => handleTabChange('ACTIVITIES')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ACTIVITIES'
                                 ? 'border-[#0C5776] text-[#001C44]'
                                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -703,7 +731,7 @@ export default function SummaryPage() {
                         </button>
 
                         <button
-                            onClick={() => setActiveTab('PROPOSALS')}
+                            onClick={() => handleTabChange('PROPOSALS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'PROPOSALS'
                                 ? 'border-[#0C5776] text-[#001C44]'
                                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -716,7 +744,7 @@ export default function SummaryPage() {
                         </button>
 
                         <button
-                            onClick={() => setActiveTab('STUDENTS')}
+                            onClick={() => handleTabChange('STUDENTS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'STUDENTS'
                                 ? 'border-[#0C5776] text-[#001C44]'
                                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -730,7 +758,7 @@ export default function SummaryPage() {
                         </button>
                     </div>
 
-                    {/* Bộ lọc cho Tab Hoạt động & Đề xuất */}
+                    {/* Bộ lọc */}
                     {activeTab !== 'STUDENTS' && (
                         <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs mb-4">
                             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
@@ -1034,7 +1062,6 @@ export default function SummaryPage() {
                     {/* ======================= TAB 3: DANH SÁCH TOÀN BỘ HỒ SƠ SINH VIÊN ======================= */}
                     {activeTab === 'STUDENTS' && (
                         <div className="space-y-4">
-                            {/* Thanh tìm kiếm nhanh */}
                             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
                                 <div className="relative flex-1 min-w-[240px]">
                                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1051,7 +1078,6 @@ export default function SummaryPage() {
                                 </div>
                             </div>
 
-                            {/* Bảng danh sách hồ sơ sinh viên */}
                             {loading ? (
                                 <div className="py-12 text-center text-xs text-slate-500">Đang tải danh sách hồ sơ...</div>
                             ) : filteredStudents.length === 0 ? (
@@ -1107,7 +1133,7 @@ export default function SummaryPage() {
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleResetPin(stu.student_id)}
-                                                                        title="Xóa mã PIN khi sinh viên quên"
+                                                                        title="Đặt lại mật khẩu khi sinh viên quên"
                                                                         className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold"
                                                                     >
                                                                         <RotateCcw className="w-3.5 h-3.5" />
@@ -1124,7 +1150,7 @@ export default function SummaryPage() {
                                 </div>
                             )}
 
-                            {/* Modal xem chi tiết hồ sơ của sinh viên được chọn */}
+                            {/* Modal xem chi tiết hồ sơ */}
                             {selectedStudentDetail && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                                     <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
@@ -1134,7 +1160,7 @@ export default function SummaryPage() {
                                                     Hồ sơ tích lũy MSSV: {selectedStudentDetail}
                                                 </h3>
                                                 <p className="text-xs text-slate-500 mt-0.5">
-                                                    Mã PIN: <strong className="text-[#0C5776]">{studentProfiles.find(p => p.student_id === selectedStudentDetail)?.pin_code}</strong> • Tổng cộng {studentDetailActivities.length} hoạt động
+                                                    Mật khẩu: <strong className="text-[#0C5776]">{studentProfiles.find(p => p.student_id === selectedStudentDetail)?.pin_code}</strong> • Tổng cộng {studentDetailActivities.length} hoạt động
                                                 </p>
                                             </div>
                                             <button
