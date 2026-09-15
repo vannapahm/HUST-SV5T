@@ -141,19 +141,24 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
                 mandatory: [
                     'Tham gia ít nhất 05 ngày tình nguyện/ năm (được tính theo số ngày thực tế tham gia các hoạt động tình nguyện cộng đồng).'
                 ],
+                note: 'Ví dụ: Sinh viên A tham gia 3 ngày tình nguyện tại mái ấm nhà mở, 1 lần hiến máu tình nguyện, 1 ngày tình nguyện Chủ nhật xanh, ở những thời điểm khác nhau trong năm sẽ được tính đủ tiêu chuẩn).',
                 priority: [
-                    'Được Ban Chấp hành Thành đoàn hoặc Hội Sinh viên Thành phố tặng Bằng khen/Giấy khen về hoạt động tình nguyện vì cộng đồng.'
+                    'Đạt huy hiệu "Chiến sỹ tình nguyện Thủ đô.',
+                    'Được khen thưởng cấp ĐH, phường, xã trở lên về hoạt động tình nguyện.'
                 ]
             },
             HOI_NHAP: {
                 mandatory: [
-                    'Đạt chứng chỉ tiếng Anh tương đương TOEIC 785+, IELTS 5.5+ trở lên (hoặc các chứng chỉ ngoại ngữ quốc tế tương đương).',
-                    'Hoàn thành ít nhất 01 khóa bồi dưỡng, tập huấn kỹ năng hội nhập, kỹ năng thực hành xã hội cấp Thành phố trở lên.'
+                    'Đạt chứng chỉ tiếng Anh trình độ B2 (theo khung tham chiếu châu Âu) hoặc tương đương B2 hoặc chứng chỉ ngoại ngữ khác ở trình độ tương đương trở lên; hoặc tổng điểm các học phần ngoại ngữ (trừ môn ngoại ngữ chuyên ngành) tích lũy từ năm nhất tới thời điểm xét đạt từ 3.4/4.0 trở lên.',
+                    'Tham gia ít nhất 01 hoạt động giao lưu quốc tế: Hội nghị, hội thảo quốc tế, các chương trình gặp gỡ, giao lưu, hợp tác với thanh niên, sinh viên quốc tế trong và ngoài nước.'
                 ],
                 elective: [
-                    'Tham gia các chương trình giao lưu thanh niên, sinh viên quốc tế do Thành phố hoặc Trung ương tổ chức.',
-                    'Đoạt giải trong các cuộc thi hùng biện tiếng Anh, Olympic ngoại ngữ từ cấp Thành phố trở lên.'
-                ]
+                    'Là thành viên ban chủ nhiệm các câu lạc bộ, đội, nhóm ngoại ngữ tại các cơ sở giáo dục, địa bàn dân cư, thường xuyên tổ chức các hoạt động giao lưu, trao đổi nâng cao năng lực ngoại ngữ và hội nhập quốc tế.',
+                    'Tham gia các cuộc thi về kiến thức hội nhập hoặc có sử dụng Ngoại ngữ từ cấp ĐH trở lên tổ chức.',
+                    'Là thành viên đội thi cấp ĐH tham gia các cuộc thi về ngoại ngữ do Trung ương và Thành phố tổ chức.',
+                    'Đạt chứng chỉ tương đương với trình độ B1 theo khung chiếu châu Âu đối với ít nhất 02 ngoại ngữ khác nhau trở lên. Riêng đối với chứng chỉ tiếng Anh, cần đạt trình độ B2 hoặc tương đương B2 trở lên.'
+                ],
+                note: 'Việc quy đổi giá trị tương đương của các chứng chỉ ngoại ngữ khác nhau căn cứ theo Thông tư số 01/2014/TT-BGDĐT và Thông tư số 23/2021/TT-BGDĐT của Bộ Giáo dục và Đào tạo.'
             }
         }
     },
