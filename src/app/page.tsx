@@ -484,7 +484,7 @@ export default function HomePage() {
           <span>
             Xây dựng và phát triển bởi <strong className="text-[#001C44]">Phạm Thị Vân Anh</strong>
           </span>
-          <span>•</span>
+          <span>|</span>
           <Link
             href="/tong-hop"
             className="inline-flex items-center gap-1 text-xs font-semibold text-[#0C5776] hover:text-[#001C44] hover:underline"
