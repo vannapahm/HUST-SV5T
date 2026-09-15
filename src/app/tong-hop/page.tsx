@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     Download, ExternalLink, Calendar, MapPin, Building2, User,
     Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil,
-    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck
+    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from "@/data/criteria";
@@ -71,7 +71,6 @@ const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
 };
 
 export default function SummaryPage() {
-    // 3 TAB: ACTIVITIES | PROPOSALS | STUDENTS (Tra cứu hồ sơ)
     const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS' | 'STUDENTS'>('ACTIVITIES');
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -96,6 +95,7 @@ export default function SummaryPage() {
     const [adminStudentRecords, setAdminStudentRecords] = useState<any[]>([]);
     const [adminStudentLoading, setAdminStudentLoading] = useState(false);
     const [adminHasSearched, setAdminHasSearched] = useState(false);
+    const [studentHasPin, setStudentHasPin] = useState<boolean | null>(null);
 
     // Form thêm mới
     const [officialForm, setOfficialForm] = useState({
@@ -156,7 +156,7 @@ export default function SummaryPage() {
         };
     }, []);
 
-    // HÀM TRA CỨU HỒ SƠ SINH VIÊN (DÀNH CHO ADMIN)
+    // HÀM TRA CỨU HỒ SƠ SINH VIÊN KÈM TRẠNG THÁI MÃ PIN
     const handleAdminLookupStudent = async (e: React.FormEvent) => {
         e.preventDefault();
         const cleanMssv = adminSearchMssv.trim();
@@ -165,14 +165,45 @@ export default function SummaryPage() {
         setAdminStudentLoading(true);
         setAdminHasSearched(true);
 
-        const { data } = await supabase
+        // 1. Lấy hoạt động đã lưu
+        const { data: actData } = await supabase
             .from('student_activities')
             .select('*')
             .eq('student_id', cleanMssv)
             .order('participation_date', { ascending: false });
 
-        if (data) setAdminStudentRecords(data);
+        if (actData) setAdminStudentRecords(actData);
+
+        // 2. Kiểm tra xem sinh viên đã cài mã PIN chưa
+        const { data: profileData } = await supabase
+            .from('student_profiles')
+            .select('student_id')
+            .eq('student_id', cleanMssv)
+            .maybeSingle();
+
+        setStudentHasPin(!!profileData);
         setAdminStudentLoading(false);
+    };
+
+    // HÀM XÓA / ĐẶT LẠI MÃ PIN CHO SINH VIÊN QUÊN MÃ
+    const handleResetStudentPin = async () => {
+        const cleanMssv = adminSearchMssv.trim();
+        const confirmReset = confirm(
+            `Xác nhận xóa mã PIN của sinh viên MSSV: ${cleanMssv}?\n\nSau khi xóa, sinh viên sẽ được yêu cầu tự thiết lập mã PIN 6 số mới trong lần đăng nhập tiếp theo.`
+        );
+        if (!confirmReset) return;
+
+        const { error } = await supabase
+            .from('student_profiles')
+            .delete()
+            .eq('student_id', cleanMssv);
+
+        if (error) {
+            alert('Lỗi khi xóa mã PIN: ' + error.message);
+        } else {
+            alert(`Đã xóa mã PIN của sinh viên ${cleanMssv} thành công! Sinh viên có thể vào trang hồ sơ để tạo mã PIN 6 số mới.`);
+            setStudentHasPin(false);
+        }
     };
 
     // CẬP NHẬT TRẠNG THÁI VÀ ĐỒNG BỘ DÂY CHUYỀN
@@ -545,7 +576,6 @@ export default function SummaryPage() {
                             </span>
                         </button>
 
-                        {/* Nút Tab 3: Tra cứu hồ sơ sinh viên */}
                         <button
                             onClick={() => setActiveTab('STUDENTS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'STUDENTS'
@@ -558,7 +588,7 @@ export default function SummaryPage() {
                         </button>
                     </div>
 
-                    {/* Bộ lọc (chỉ hiện khi ở Tab Hoạt động hoặc Đề xuất) */}
+                    {/* Bộ lọc */}
                     {activeTab !== 'STUDENTS' && (
                         <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs mb-4">
                             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
@@ -890,44 +920,78 @@ export default function SummaryPage() {
 
                             {adminStudentLoading ? (
                                 <div className="py-12 text-center text-xs text-slate-500">Đang tải hồ sơ sinh viên...</div>
-                            ) : adminStudentRecords.length > 0 ? (
-                                <div className="space-y-3">
-                                    <div className="text-xs text-slate-600 font-bold px-1 flex items-center justify-between">
-                                        <span>Hồ sơ MSSV: <strong className="text-[#001C44]">{adminSearchMssv}</strong></span>
-                                        <span>Tổng cộng: {adminStudentRecords.length} hoạt động</span>
+                            ) : adminHasSearched ? (
+                                <div className="space-y-4">
+                                    {/* Khối quản trị mã PIN của sinh viên */}
+                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                            <div className="text-xs text-slate-500">Trạng thái bảo mật MSSV: <strong className="text-[#001C44]">{adminSearchMssv}</strong></div>
+                                            <div className="text-sm font-bold mt-0.5 flex items-center gap-1.5">
+                                                {studentHasPin ? (
+                                                    <span className="text-emerald-700 flex items-center gap-1">
+                                                        <KeyRound className="w-4 h-4" /> Đã thiết lập mã PIN bảo mật 6 số
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-amber-600 flex items-center gap-1">
+                                                        <AlertCircle className="w-4 h-4" /> Chưa thiết lập mã PIN (hoặc vừa được đặt lại)
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* NÚT XÓA / ĐẶT LẠI MÃ PIN KHI SINH VIÊN QUÊN */}
+                                        {studentHasPin && (
+                                            <button
+                                                type="button"
+                                                onClick={handleResetStudentPin}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-300 rounded-lg text-xs font-semibold transition-colors"
+                                            >
+                                                <RotateCcw className="w-3.5 h-3.5" />
+                                                <span>Xóa / Đặt lại mã PIN</span>
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {adminStudentRecords.map((r) => (
-                                        <div key={r.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5 hover:border-slate-300 transition-all">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#0C5776] text-white">
-                                                    {CRITERIA_MAP[r.target_standard] || r.target_standard}
-                                                </span>
-                                                <span className="text-xs text-slate-400 flex items-center gap-1">
-                                                    <Calendar className="w-3 h-3" /> {r.participation_date}
-                                                </span>
-                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${r.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                                                        r.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                                                            'bg-rose-50 text-rose-700 border-rose-300'
-                                                    }`}>
-                                                    {r.status === 'APPROVED' ? '✓ Đã công nhận' : r.status === 'PENDING' ? '⏳ Chờ xét' : '✕ Bị loại'}
-                                                </span>
+                                    {/* Danh sách hoạt động sinh viên đã lưu */}
+                                    {adminStudentRecords.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <div className="text-xs text-slate-600 font-bold px-1">
+                                                Tổng cộng có {adminStudentRecords.length} hoạt động trong hồ sơ
                                             </div>
 
-                                            <h4 className="text-sm font-bold text-[#001C44]">{r.activity_title}</h4>
-                                            <p className="text-xs text-slate-600"><strong>Tiêu chí:</strong> {r.criteria_detail}</p>
-                                            {r.organizer && <p className="text-xs text-slate-500">Đơn vị tổ chức: {r.organizer}</p>}
-                                            {r.proof_url && (
-                                                <a href={r.proof_url} target="_blank" rel="noreferrer" className="text-xs text-[#0C5776] underline inline-flex items-center gap-1 pt-1">
-                                                    Xem minh chứng <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                            )}
+                                            {adminStudentRecords.map((r) => (
+                                                <div key={r.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5 hover:border-slate-300 transition-all">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#0C5776] text-white">
+                                                            {CRITERIA_MAP[r.target_standard] || r.target_standard}
+                                                        </span>
+                                                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                                                            <Calendar className="w-3 h-3" /> {r.participation_date}
+                                                        </span>
+                                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${r.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
+                                                                r.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                                                                    'bg-rose-50 text-rose-700 border-rose-300'
+                                                            }`}>
+                                                            {r.status === 'APPROVED' ? '✓ Đã công nhận' : r.status === 'PENDING' ? '⏳ Chờ xét' : '✕ Bị loại'}
+                                                        </span>
+                                                    </div>
+
+                                                    <h4 className="text-sm font-bold text-[#001C44]">{r.activity_title}</h4>
+                                                    <p className="text-xs text-slate-600"><strong>Tiêu chí:</strong> {r.criteria_detail}</p>
+                                                    {r.organizer && <p className="text-xs text-slate-500">Đơn vị tổ chức: {r.organizer}</p>}
+                                                    {r.proof_url && (
+                                                        <a href={r.proof_url} target="_blank" rel="noreferrer" className="text-xs text-[#0C5776] underline inline-flex items-center gap-1 pt-1">
+                                                            Xem minh chứng <ExternalLink className="w-3 h-3" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            ) : adminHasSearched ? (
-                                <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-xs text-slate-500">
-                                    Không tìm thấy dữ liệu hoạt động nào của sinh viên có MSSV: <strong>{adminSearchMssv}</strong>.
+                                    ) : (
+                                        <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-xs text-slate-500">
+                                            Sinh viên MSSV: <strong>{adminSearchMssv}</strong> chưa lưu hoạt động nào vào hồ sơ.
+                                        </div>
+                                    )}
                                 </div>
                             ) : null}
                         </div>
@@ -945,7 +1009,7 @@ export default function SummaryPage() {
                 </p>
             </footer>
 
-            {/* MODAL 1: THÊM HOẠT ĐỘNG MỚI */}
+            {/* MODAL 1: THÊM HOẠT ĐỘNG */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                     <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
