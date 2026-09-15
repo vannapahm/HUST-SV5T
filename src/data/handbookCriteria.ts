@@ -146,7 +146,7 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
             },
             HOI_NHAP: {
                 mandatory: [
-                    'Đạt chứng chỉ tiếng Anh tương đương TOEIC 600+, IELTS 5.5+ trở lên (hoặc các chứng chỉ ngoại ngữ quốc tế tương đương).',
+                    'Đạt chứng chỉ tiếng Anh tương đương TOEIC 785+, IELTS 5.5+ trở lên (hoặc các chứng chỉ ngoại ngữ quốc tế tương đương).',
                     'Hoàn thành ít nhất 01 khóa bồi dưỡng, tập huấn kỹ năng hội nhập, kỹ năng thực hành xã hội cấp Thành phố trở lên.'
                 ],
                 elective: [
