@@ -4,9 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
     ArrowLeft, Search, CheckCircle2, Circle, Award, BookOpen,
-    HeartHandshake, Activity, Globe, Filter, RotateCcw, Sparkles, Star, Info
+    HeartHandshake, Activity, Globe, Filter, RotateCcw, Star, Info
 } from 'lucide-react';
-import { HANDBOOK_CRITERIA } from '@/data/handbookCriteria';
+import { HANDBOOK_DATA } from '@/data/handbookCriteria';
 
 const STANDARDS_CONFIG: Record<string, { label: string; desc: string }> = {
     DAO_DUC: { label: 'Đạo đức tốt', desc: 'Rèn luyện tư tưởng, đạo đức, kỷ luật và nội quy.' },
@@ -17,33 +17,14 @@ const STANDARDS_CONFIG: Record<string, { label: string; desc: string }> = {
 };
 
 const LEVELS = [
-    { key: 'ALL', label: 'Tất cả các cấp' },
     { key: 'DAI_HOC', label: 'Cấp Đại học (2025 - 2026)' },
     { key: 'THANH_PHO', label: 'Cấp Thành phố' },
     { key: 'TRUNG_UONG', label: 'Cấp Trung ương' }
 ];
 
-function getLevelsOfCriterion(fullText: string): string[] {
-    const text = fullText.toLowerCase();
-    const levels: string[] = [];
-    if (text.includes('đại học') || text.includes('trường') || text.includes('khoa') || text.includes('phường') || text.includes('xã')) {
-        levels.push('DAI_HOC');
-    }
-    if (text.includes('thành phố') || text.includes('tỉnh') || text.includes('thủ đô')) {
-        levels.push('THANH_PHO');
-    }
-    if (text.includes('trung ương') || text.includes('quốc gia') || text.includes('quốc tế') || text.includes('wos/scopus')) {
-        levels.push('TRUNG_UONG');
-    }
-    if (levels.length === 0) {
-        return ['DAI_HOC', 'THANH_PHO', 'TRUNG_UONG'];
-    }
-    return levels;
-}
-
 export default function CriteriaGuidePage() {
+    const [selectedLevel, setSelectedLevel] = useState<string>('DAI_HOC'); // Mặc định mở ngay Cấp Đại học
     const [selectedStandard, setSelectedStandard] = useState<string>('DAO_DUC');
-    const [selectedLevel, setSelectedLevel] = useState<string>('DAI_HOC');
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
@@ -73,9 +54,17 @@ export default function CriteriaGuidePage() {
         }
     };
 
+    // Lấy dữ liệu theo cấp đang chọn
+    const currentLevelData = useMemo(() => {
+        return HANDBOOK_DATA[selectedLevel] || HANDBOOK_DATA.DAI_HOC;
+    }, [selectedLevel]);
+
     const standardsToDisplay = useMemo(() => {
-        return selectedStandard === 'ALL' ? Object.keys(HANDBOOK_CRITERIA) : [selectedStandard];
-    }, [selectedStandard]);
+        if (selectedStandard === 'ALL') {
+            return Object.keys(currentLevelData.standards);
+        }
+        return [selectedStandard];
+    }, [selectedStandard, currentLevelData]);
 
     const totalCompleted = useMemo(() => {
         return Object.values(checkedItems).filter(Boolean).length;
@@ -104,10 +93,10 @@ export default function CriteriaGuidePage() {
                                     </span>
                                 </div>
                                 <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight pt-0.5">
-                                    Bộ tiêu chuẩn xét chọn danh hiệu “Sinh viên 5 tốt”
+                                    {currentLevelData.title}
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80">
-                                    Cấp Đại học năm học 2025 - 2026 • Cấp Thành phố • Cấp Trung ương
+                                    {currentLevelData.subTitle}
                                 </p>
                             </div>
 
@@ -139,14 +128,14 @@ export default function CriteriaGuidePage() {
                             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                             <input
                                 type="text"
-                                placeholder="Tra cứu tiêu chí (VD: điểm rèn luyện, GPA, nghiên cứu khoa học, GDTC, hiến máu...)"
+                                placeholder="Tra cứu nhanh tiêu chí (VD: điểm rèn luyện, GPA, K68, GDTC, hiến máu...)"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
                             />
                         </div>
 
-                        {/* Cấp xét */}
+                        {/* Phân loại Cấp xét (3 cấp độc lập) */}
                         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
                             <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
                                 <Filter className="w-3.5 h-3.5 text-[#0C5776]" /> Cấp xét:
@@ -165,7 +154,7 @@ export default function CriteriaGuidePage() {
                             ))}
                         </div>
 
-                        {/* Tiêu chuẩn */}
+                        {/* Chọn 5 tiêu chuẩn */}
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs font-semibold text-slate-500 mr-1">Tiêu chuẩn:</span>
                             <button
@@ -192,19 +181,15 @@ export default function CriteriaGuidePage() {
                         </div>
                     </div>
 
-                    {/* Danh sách tiêu chuẩn dạng Infographic 2-3 khối */}
+                    {/* Hiển thị tiêu chuẩn theo Visual Infographic */}
                     <div className="space-y-12">
                         {standardsToDisplay.map((stdKey) => {
-                            const standard = HANDBOOK_CRITERIA[stdKey];
+                            const standard = currentLevelData.standards[stdKey];
                             if (!standard) return null;
 
                             const filterFn = (fullText: string) => {
-                                const levels = getLevelsOfCriterion(fullText);
-                                const matchLevel = selectedLevel === 'ALL' || levels.includes(selectedLevel);
-                                const matchSearch =
-                                    searchQuery.trim() === '' ||
-                                    fullText.toLowerCase().includes(searchQuery.toLowerCase().trim());
-                                return matchLevel && matchSearch;
+                                if (searchQuery.trim() === '') return true;
+                                return fullText.toLowerCase().includes(searchQuery.toLowerCase().trim());
                             };
 
                             const mandatoryList = standard.mandatory.filter(filterFn);
@@ -220,7 +205,7 @@ export default function CriteriaGuidePage() {
                                     {/* Tiêu đề tiêu chuẩn */}
                                     <div className="text-center pb-2">
                                         <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#001C44]">
-                                            {standard.name}
+                                            {STANDARDS_CONFIG[stdKey]?.label || stdKey}
                                         </h2>
                                         <div className="w-12 h-1 bg-[#0C5776] mx-auto rounded-full mt-2"></div>
                                     </div>
@@ -258,7 +243,7 @@ export default function CriteriaGuidePage() {
                                                 })}
                                             </div>
 
-                                            {/* Ghi chú hoặc ví dụ đi kèm */}
+                                            {/* Ví dụ đi kèm (như ở tiêu chuẩn Tình nguyện tốt) */}
                                             {standard.note && (
                                                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 italic leading-relaxed flex items-start gap-2">
                                                     <Info className="w-4 h-4 text-[#0C5776] shrink-0 mt-0.5" />
