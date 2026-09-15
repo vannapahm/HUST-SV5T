@@ -197,19 +197,6 @@ export default function SummaryPage() {
     useEffect(() => {
         if (isAuthenticated) {
             loadData();
-
-            const handleOnline = () => loadData();
-            const handleVisibilityChange = () => {
-                if (document.visibilityState === 'visible') loadData();
-            };
-
-            window.addEventListener('online', handleOnline);
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-
-            return () => {
-                window.removeEventListener('online', handleOnline);
-                document.removeEventListener('visibilitychange', handleVisibilityChange);
-            };
         }
     }, [isAuthenticated]);
 
