@@ -40,21 +40,11 @@ export default function HomePage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const filteredActivities = useMemo(() => {
-    return activities.filter((act) => {
-      const actStatus = act.status || 'APPROVED';
-
-      const matchStandard = selectedStandard === 'ALL' || act.supported_standard === selectedStandard;
-      const matchStatus = selectedStatus === 'ALL' || actStatus === selectedStatus;
-      const matchSearch =
-        searchQuery.trim() === '' ||
-        act.title.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        act.organizer.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        (act.criteria_detail && act.criteria_detail.toLowerCase().includes(searchQuery.toLowerCase().trim()));
-
-      return matchStandard && matchStatus && matchSearch;
-    });
-  }, [activities, selectedStandard, selectedStatus, searchQuery]);
+  // Bộ lọc
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedYear, setSelectedYear] = useState('2025-2026');
+  const [selectedStandard, setSelectedStandard] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
 
   const fetchActivities = async () => {
     const { data, error } = await supabase
@@ -132,7 +122,7 @@ export default function HomePage() {
   const filteredActivities = useMemo(() => {
     return activities.filter((act) => {
       const actStatus = act.status || 'APPROVED';
-
+      const matchYear = !act.academic_year || act.academic_year === selectedYear;
       const matchStandard = selectedStandard === 'ALL' || act.supported_standard === selectedStandard;
       const matchStatus = selectedStatus === 'ALL' || actStatus === selectedStatus;
       const matchSearch =
@@ -141,9 +131,9 @@ export default function HomePage() {
         act.organizer.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
         (act.criteria_detail && act.criteria_detail.toLowerCase().includes(searchQuery.toLowerCase().trim()));
 
-      return matchStandard && matchStatus && matchSearch;
+      return matchYear && matchStandard && matchStatus && matchSearch;
     });
-  }, [activities, selectedStandard, selectedStatus, searchQuery]);
+  }, [activities, selectedYear, selectedStandard, selectedStatus, searchQuery]);
 
   const approvedCount = activities.filter((a) => (a.status || 'APPROVED') === 'APPROVED').length;
   const pendingCount = activities.filter((a) => a.status === 'PENDING').length;
