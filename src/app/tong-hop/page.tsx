@@ -1361,12 +1361,12 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (nếu có)</label>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (ngày & giờ)</label>
                                     <input
-                                        type="date"
+                                        type="datetime-local"
                                         value={officialForm.registration_deadline}
                                         onChange={(e) => setOfficialForm({ ...officialForm, registration_deadline: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs"
                                     />
                                 </div>
 
