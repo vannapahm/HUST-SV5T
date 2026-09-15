@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     ArrowLeft, PlusCircle, Trash2, Calendar, Award,
     ExternalLink, User, Sparkles, X, LogOut, ArrowRight,
-    CheckCircle2, Clock, AlertCircle, Lock, KeyRound, FileSpreadsheet, Save, Calculator
+    CheckCircle2, Clock, AlertCircle, Lock, KeyRound, FileSpreadsheet, Save, Calculator, Info
 } from 'lucide-react';
 import { CRITERIA_TREE } from '@/data/criteria';
 
@@ -213,7 +213,6 @@ export default function StudentPortfolioPage() {
         if (data) {
             setAcademicData(data);
         } else {
-            // Thiết lập giá trị mặc định cho sinh viên mới
             setAcademicData((prev) => ({
                 ...prev,
                 student_id: mssv,
@@ -254,7 +253,7 @@ export default function StudentPortfolioPage() {
 
         if (!data) {
             const confirmCreate = confirm(
-                `MSSV "${cleanMssv}" chưa kích hoạt hồ sơ trên hệ thống.\n\nKhởi tạo hồ sơ mới với mật khẩu này?`
+                `MSSV "${cleanMssv}" chưa kích hoạt hồ sơ trên hệ thống.\n\nBạn có muốn khởi tạo hồ sơ mới với mật khẩu: ${cleanPin} không?`
             );
             if (!confirmCreate) return;
 
@@ -302,7 +301,6 @@ export default function StudentPortfolioPage() {
         setAuthError('');
     };
 
-    // TÍNH TOÁN GPA TRỌNG SỐ TÍN CHỈ VÀ ĐIỂM RÈN LUYỆN TRUNG BÌNH
     const calculatedStats = useMemo(() => {
         const totalCredits = (Number(academicData.credits_sem1) || 0) + (Number(academicData.credits_sem2) || 0);
         let averageGpa = 0;
@@ -477,12 +475,12 @@ export default function StudentPortfolioPage() {
             <div>
                 {/* Header */}
                 <header className="bg-[#001C44] text-white border-b border-[#0C5776] shadow-sm">
-                    <div className="max-w-5xl mx-auto px-4 py-6">
+                    <div className="max-w-5xl mx-auto px-4 py-5">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <Link
                                     href="/"
-                                    className="inline-flex items-center gap-1.5 text-xs text-[#BCFEFE] hover:underline mb-2"
+                                    className="inline-flex items-center gap-1.5 text-xs text-[#BCFEFE] hover:underline mb-1.5"
                                 >
                                     <ArrowLeft className="w-3.5 h-3.5" />
                                     Về Trang chủ
@@ -491,14 +489,13 @@ export default function StudentPortfolioPage() {
                                     <Sparkles className="w-6 h-6 text-[#BCFEFE]" />
                                     Hồ sơ cá nhân Sinh viên 5 tốt
                                 </h1>
-                                <p className="text-xs text-[#BCFEFE]/80 mt-1">
+                                <p className="text-xs text-[#BCFEFE]/80 mt-0.5">
                                     Theo dõi tiến độ, số lượng tiêu chí đạt chuẩn và lưu trữ minh chứng rèn luyện.
                                 </p>
                             </div>
 
                             {isLoggedIn && (
                                 <div className="flex flex-wrap items-center gap-2">
-                                    {/* NÚT CẬP NHẬT THÔNG TIN HỌC VỤ & XUẤT BÁO CÁO */}
                                     <button
                                         onClick={() => setIsAcademicModalOpen(true)}
                                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-sm"
@@ -538,60 +535,72 @@ export default function StudentPortfolioPage() {
                     </div>
                 </header>
 
-                {/* ==================== MÀN HÌNH 1: ĐĂNG NHẬP 1 BƯỚC ==================== */}
+                {/* ==================== MÀN HÌNH ĐĂNG NHẬP (ĐÃ TỐI ƯU GỌN GÀNG, KHÔNG CUỘN) ==================== */}
                 {!isLoggedIn && (
-                    <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-150">
-                        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-5">
-                            <div className="w-16 h-16 bg-[#0C5776]/10 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
-                                <User className="w-8 h-8" />
-                            </div>
-
-                            <div>
-                                <h2 className="text-lg font-bold text-[#001C44]">Đăng nhập hồ sơ cá nhân</h2>
-                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Nhập MSSV và Mật khẩu để quản lý hồ sơ tích lũy Sinh viên 5 tốt.
+                    <div className="max-w-md mx-auto px-4 py-8 sm:py-10 animate-in fade-in zoom-in duration-150">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm space-y-4">
+                            {/* Tiêu đề & Biểu tượng gọn gàng */}
+                            <div className="text-center space-y-1">
+                                <div className="w-12 h-12 bg-[#0C5776]/10 text-[#0C5776] rounded-xl flex items-center justify-center mx-auto mb-2">
+                                    <User className="w-6 h-6" />
+                                </div>
+                                <h2 className="text-lg font-bold text-[#001C44]">Cổng hồ sơ Sinh viên 5 tốt</h2>
+                                <p className="text-xs text-slate-500">
+                                    Tra cứu hoạt động và quản lý tiến độ rèn luyện cá nhân
                                 </p>
                             </div>
 
-                            <form onSubmit={handleLoginSubmit} className="space-y-3.5 text-left">
+                            {/* LƯU Ý ĐƯỢC ĐẨY LÊN ĐẦU: ĐỌC LÀ HIỂU NGAY */}
+                            <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200/80 text-xs text-[#001C44] flex items-start gap-2.5">
+                                <Info className="w-4 h-4 text-[#0C5776] shrink-0 mt-0.5" />
+                                <div className="text-[11px] leading-relaxed text-slate-700">
+                                    <strong className="text-[#0C5776]">Lần đầu truy cập:</strong> Bạn chỉ cần nhập đúng MSSV và <strong>tự đặt một mật khẩu 6 số bất kỳ</strong> để kích hoạt tài khoản.
+                                </div>
+                            </div>
+
+                            {/* Form đăng nhập / Kích hoạt */}
+                            <form onSubmit={handleLoginSubmit} className="space-y-3 text-left">
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-700 mb-1">
                                         Mã số sinh viên (MSSV) *
                                     </label>
                                     <div className="relative">
-                                        <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                         <input
                                             type="text"
                                             required
                                             autoFocus
-                                            placeholder="VD: 20211234..."
+                                            placeholder="VD: 20233017..."
                                             value={mssvInput}
                                             onChange={(e) => setMssvInput(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
+                                            className="w-full pl-9 pr-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                        Mật khẩu (6 chữ số) *
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-semibold text-slate-700">
+                                            Mật khẩu (6 chữ số) *
+                                        </label>
+                                        <span className="text-[10px] text-slate-400">Tự đặt nếu mới vào</span>
+                                    </div>
                                     <div className="relative">
-                                        <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                        <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                         <input
                                             type="password"
                                             required
                                             maxLength={6}
-                                            placeholder="••••••"
+                                            placeholder="Nhập 6 chữ số mật khẩu..."
                                             value={pinInput}
                                             onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
-                                            className="w-full pl-10 pr-4 py-2.5 text-xs font-bold tracking-widest border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
+                                            className="w-full pl-9 pr-3 py-2 text-xs font-bold tracking-widest border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between pt-1 text-xs">
-                                    <label className="inline-flex items-center gap-2 cursor-pointer text-slate-600 select-none">
+                                <div className="flex items-center justify-between pt-0.5 text-xs">
+                                    <label className="inline-flex items-center gap-2 cursor-pointer text-slate-600 select-none text-[11px]">
                                         <input
                                             type="checkbox"
                                             checked={rememberMe}
@@ -603,7 +612,7 @@ export default function StudentPortfolioPage() {
                                 </div>
 
                                 {authError && (
-                                    <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs text-center font-medium leading-relaxed">
+                                    <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs text-center font-medium leading-relaxed">
                                         {authError}
                                     </div>
                                 )}
@@ -611,24 +620,19 @@ export default function StudentPortfolioPage() {
                                 <button
                                     type="submit"
                                     disabled={submittingAuth}
-                                    className="w-full py-3 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                                    className="w-full py-2.5 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-1"
                                 >
-                                    <span>{submittingAuth ? 'Đang kiểm tra...' : 'Đăng nhập vào hồ sơ'}</span>
+                                    <span>{submittingAuth ? 'Đang kiểm tra...' : 'Truy cập / Kích hoạt hồ sơ'}</span>
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </form>
-
-                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 leading-relaxed text-left">
-                                💡 <strong>Lưu ý:</strong> Nếu bạn lần đầu truy cập, hãy nhập MSSV và tự chọn một mật khẩu 6 số bất kỳ để kích hoạt hồ sơ.
-                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* ==================== MÀN HÌNH 2: HỒ SƠ TÍCH LŨY ==================== */}
+                {/* ==================== MÀN HÌNH HỒ SƠ TÍCH LŨY ==================== */}
                 {isLoggedIn && (
                     <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-150">
-                        {/* Thanh thông tin sinh viên & Học vụ tóm tắt */}
                         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <span className="text-xs text-slate-500">Hồ sơ sinh viên:</span>
@@ -709,10 +713,10 @@ export default function StudentPortfolioPage() {
                                         <div
                                             key={r.id}
                                             className={`border rounded-xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${isRejected
-                                                ? 'bg-rose-50/50 border-rose-200'
-                                                : isPending
-                                                    ? 'bg-amber-50/30 border-amber-200'
-                                                    : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-rose-50/50 border-rose-200'
+                                                    : isPending
+                                                        ? 'bg-amber-50/30 border-amber-200'
+                                                        : 'bg-white border-slate-200 hover:border-slate-300'
                                                 }`}
                                         >
                                             <div className="space-y-1.5 flex-1">
@@ -952,7 +956,7 @@ export default function StudentPortfolioPage() {
                                     </div>
                                 </div>
 
-                                {/* Khối 2: Điểm học tập & Điểm rèn luyện theo kỳ */}
+                                {/* Khối 2: Điểm học tập & Điểm rèn luyện */}
                                 <div className="bg-blue-50/50 p-3.5 rounded-xl border border-blue-200 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="font-bold text-[#001C44] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
@@ -1206,8 +1210,8 @@ export default function StudentPortfolioPage() {
                                 type="button"
                                 onClick={() => setAddMode('SYSTEM')}
                                 className={`pb-2.5 text-xs font-semibold border-b-2 transition-all ${addMode === 'SYSTEM'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                                        ? 'border-[#0C5776] text-[#001C44]'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600'
                                     }`}
                             >
                                 Chọn từ hoạt động trên hệ thống
@@ -1216,8 +1220,8 @@ export default function StudentPortfolioPage() {
                                 type="button"
                                 onClick={() => setAddMode('CUSTOM')}
                                 className={`pb-2.5 text-xs font-semibold border-b-2 transition-all ${addMode === 'CUSTOM'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                                        ? 'border-[#0C5776] text-[#001C44]'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600'
                                     }`}
                             >
                                 Tự nhập hoạt động bên ngoài
