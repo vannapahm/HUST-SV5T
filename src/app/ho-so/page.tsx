@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import {
     ArrowLeft, PlusCircle, Trash2, Calendar, Award,
-    ExternalLink, User, Sparkles, X, LogOut, ArrowRight, CheckCircle2,
-    AlertCircle, Clock
+    ExternalLink, User, Sparkles, X, LogOut, ArrowRight,
+    CheckCircle2, Clock, AlertCircle
 } from 'lucide-react';
 import { CRITERIA_TREE } from '@/data/criteria';
 
@@ -14,6 +14,7 @@ interface StudentRecord {
     id: number;
     created_at: string;
     student_id: string;
+    student_name?: string;
     activity_id?: string;
     activity_title: string;
     organizer?: string;
@@ -21,7 +22,7 @@ interface StudentRecord {
     criteria_detail: string;
     participation_date: string;
     proof_url?: string;
-    status: string; // 'APPROVED' | 'PENDING' | 'REJECTED'
+    status: 'APPROVED' | 'PENDING' | 'REJECTED';
 }
 
 interface OfficialActivity {
@@ -31,7 +32,7 @@ interface OfficialActivity {
     supported_standard: string;
     criteria_detail?: string;
     start_date: string;
-    status?: string;
+    status?: 'APPROVED' | 'PENDING' | 'REJECTED';
 }
 
 const CRITERIA_MAP: Record<string, string> = {
@@ -48,7 +49,7 @@ export default function StudentPortfolioPage() {
     const [records, setRecords] = useState<StudentRecord[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Danh sách hoạt động trên hệ thống
+    // Danh sách hoạt động trên hệ thống để chọn nhanh
     const [systemActivities, setSystemActivities] = useState<OfficialActivity[]>([]);
 
     // Modal thêm hoạt động
@@ -56,7 +57,7 @@ export default function StudentPortfolioPage() {
     const [addMode, setAddMode] = useState<'SYSTEM' | 'CUSTOM'>('SYSTEM');
     const [selectedSystemActId, setSelectedSystemActId] = useState<string>('');
 
-    // Form tự nhập hoạt động
+    // Form tự nhập hoạt động ngoài
     const [customForm, setCustomForm] = useState({
         activity_title: '',
         organizer: '',
@@ -66,7 +67,7 @@ export default function StudentPortfolioPage() {
         proof_url: '',
     });
 
-    // Tự nhớ MSSV đã tra cứu lần trước trên máy
+    // Tự nhớ MSSV đã tra cứu trên máy
     useEffect(() => {
         const savedMssv = localStorage.getItem('sv5t_student_id');
         if (savedMssv) {
@@ -76,6 +77,7 @@ export default function StudentPortfolioPage() {
         fetchSystemActivities();
     }, []);
 
+    // Tải danh sách hoạt động trên hệ thống
     const fetchSystemActivities = async () => {
         const { data } = await supabase
             .from('activities')
@@ -84,6 +86,7 @@ export default function StudentPortfolioPage() {
         if (data) setSystemActivities(data);
     };
 
+    // Tải toàn bộ hồ sơ tích lũy của sinh viên theo MSSV
     const fetchRecords = async (mssv: string) => {
         setLoading(true);
         const { data, error } = await supabase
@@ -93,12 +96,12 @@ export default function StudentPortfolioPage() {
             .order('participation_date', { ascending: false });
 
         if (!error && data) {
-            setRecords(data);
+            setRecords(data as StudentRecord[]);
         }
         setLoading(false);
     };
 
-    // Đăng nhập / Xem hồ sơ
+    // Vào hồ sơ cá nhân
     const handleEnterPortfolio = (e: React.FormEvent) => {
         e.preventDefault();
         const cleanMssv = mssvInput.trim();
@@ -112,7 +115,7 @@ export default function StudentPortfolioPage() {
         fetchRecords(cleanMssv);
     };
 
-    // Đổi MSSV khác
+    // Đổi sang MSSV khác
     const handleSwitchMssv = () => {
         setCurrentMssv(null);
         setMssvInput('');
@@ -120,7 +123,7 @@ export default function StudentPortfolioPage() {
         localStorage.removeItem('sv5t_student_id');
     };
 
-    // Thêm hoạt động vào hồ sơ cá nhân
+    // Ghi nhận hoạt động vào hồ sơ cá nhân
     const handleAddActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentMssv) return;
@@ -139,10 +142,10 @@ export default function StudentPortfolioPage() {
                 activity_title: act.title,
                 organizer: act.organizer,
                 target_standard: act.supported_standard,
-                criteria_detail: act.criteria_detail || 'Đã tham gia hoạt động được BTK công nhận',
+                criteria_detail: act.criteria_detail || 'Tham gia hoạt động được BTK công nhận',
                 participation_date: act.start_date ? act.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
                 proof_url: '',
-                status: act.status || 'APPROVED',
+                status: act.status || 'APPROVED', // Kế thừa trạng thái từ hệ thống
             };
         } else {
             if (!customForm.activity_title || !customForm.criteria_detail) {
@@ -158,7 +161,7 @@ export default function StudentPortfolioPage() {
                 criteria_detail: customForm.criteria_detail,
                 participation_date: customForm.participation_date,
                 proof_url: customForm.proof_url,
-                status: 'APPROVED', // Mặc định ghi nhận cá nhân
+                status: 'PENDING', // Hoạt động tự nhập mặc định ở trạng thái chờ xét duyệt cuối năm
             };
         }
 
@@ -167,7 +170,7 @@ export default function StudentPortfolioPage() {
         if (error) {
             alert('Không thể lưu hoạt động: ' + error.message);
         } else if (data) {
-            setRecords([data[0], ...records]);
+            setRecords([data[0] as StudentRecord, ...records]);
             setIsModalOpen(false);
             setSelectedSystemActId('');
             setCustomForm({
@@ -178,13 +181,13 @@ export default function StudentPortfolioPage() {
                 participation_date: new Date().toISOString().split('T')[0],
                 proof_url: '',
             });
-            alert('Đã tích lũy hoạt động thành công vào hồ sơ MSSV: ' + currentMssv);
+            alert('Đã ghi nhận hoạt động thành công vào hồ sơ MSSV: ' + currentMssv);
         }
     };
 
-    // Sinh viên tự bấm xóa hoạt động khỏi hồ sơ
-    const handleDeleteRecord = async (id: number) => {
-        if (!confirm('Bạn có chắc chắn muốn xóa hoạt động này khỏi hồ sơ cá nhân?')) return;
+    // Sinh viên tự bấm xóa thủ công một hoạt động khỏi hồ sơ cá nhân
+    const handleDeleteRecord = async (id: number, title: string) => {
+        if (!confirm(`Bạn có chắc muốn xóa hoạt động:\n"${title}"\nkhỏi hồ sơ tích lũy của mình?`)) return;
 
         const { error } = await supabase.from('student_activities').delete().eq('id', id);
         if (!error) {
@@ -194,7 +197,8 @@ export default function StudentPortfolioPage() {
         }
     };
 
-    // Chỉ đếm các hoạt động ĐÃ CÔNG NHẬN (APPROVED), hoạt động REJECTED tự động bị trừ
+    // CHỈ TÍNH VÀO TỔNG TIÊU CHUẨN NHỮNG HOẠT ĐỘNG ĐÃ CÔNG NHẬN (APPROVED)
+    // Các hoạt động REJECTED hoặc PENDING được tự động loại khỏi bộ đếm
     const statsByStandard = {
         DAO_DUC: records.filter((r) => r.target_standard === 'DAO_DUC' && r.status === 'APPROVED').length,
         HOC_TAP: records.filter((r) => r.target_standard === 'HOC_TAP' && r.status === 'APPROVED').length,
@@ -225,11 +229,11 @@ export default function StudentPortfolioPage() {
                                     Hồ sơ tích lũy Sinh viên 5 tốt
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Hệ thống lưu trữ và theo dõi quá trình rèn luyện theo từng Mã số sinh viên (MSSV).
+                                    Theo dõi và lưu trữ các hoạt động rèn luyện theo từng Mã số sinh viên (MSSV).
                                 </p>
                             </div>
 
-                            {/* Nút thao tác nhanh trên Header khi đã mở hồ sơ */}
+                            {/* Nút hành động khi đã đăng nhập MSSV */}
                             {currentMssv && (
                                 <div className="flex items-center gap-2">
                                     <button
@@ -253,18 +257,18 @@ export default function StudentPortfolioPage() {
                     </div>
                 </header>
 
-                {/* ==================== MÀN HÌNH 1: CỔNG TRA CỨU MSSV ==================== */}
+                {/* ==================== MÀN HÌNH 1: CHƯA NHẬP MSSV ==================== */}
                 {!currentMssv ? (
                     <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-200">
                         <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-6">
-                            <div className="w-16 h-16 bg-[#BCFEFE]/25 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
+                            <div className="w-16 h-16 bg-[#BCFEFE]/20 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
                                 <User className="w-8 h-8" />
                             </div>
 
                             <div>
                                 <h2 className="text-lg font-bold text-[#001C44]">Cổng tra cứu hồ sơ cá nhân</h2>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Nhập Mã số sinh viên (MSSV) của bạn để tra cứu tiến độ 5 tiêu chuẩn và tích lũy các hoạt động rèn luyện theo thời gian.
+                                    Nhập Mã số sinh viên (MSSV) của bạn để xem danh mục tiêu chí đã đạt và tích lũy thêm các hoạt động mới.
                                 </p>
                             </div>
 
@@ -291,17 +295,17 @@ export default function StudentPortfolioPage() {
                             </form>
 
                             <p className="text-[11px] text-slate-400 italic">
-                                * Hoạt động được lưu trữ bền vững theo MSSV, không cần ghi nhớ mật khẩu.
+                                * Hoạt động được lưu trữ trực tuyến theo MSSV và tự động cập nhật khi có kết luận xét duyệt từ BTK.
                             </p>
                         </div>
                     </div>
                 ) : (
-                    /* ==================== MÀN HÌNH 2: NỘI DUNG HỒ SƠ ==================== */
+                    /* ==================== MÀN HÌNH 2: ĐÃ VÀO HỒ SƠ ==================== */
                     <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-200">
                         {/* Thanh thông tin sinh viên */}
                         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <span className="text-xs text-slate-500">Đang theo dõi hồ sơ:</span>
+                                <span className="text-xs text-slate-500">Đang xem hồ sơ sinh viên:</span>
                                 <div className="text-xl font-bold text-[#001C44] flex items-center gap-2">
                                     <span>MSSV: {currentMssv}</span>
                                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -312,8 +316,8 @@ export default function StudentPortfolioPage() {
 
                             <div className="flex items-center gap-4 text-right">
                                 <div>
-                                    <span className="text-xs text-slate-500">Tiêu chí được công nhận</span>
-                                    <div className="text-lg font-bold text-[#0C5776]">{totalApproved} hoạt động</div>
+                                    <span className="text-xs text-slate-500">Hợp lệ tính điểm:</span>
+                                    <div className="text-lg font-bold text-[#0C5776]">{totalApproved} tiêu chí</div>
                                 </div>
                                 <button
                                     onClick={handleSwitchMssv}
@@ -324,7 +328,7 @@ export default function StudentPortfolioPage() {
                             </div>
                         </div>
 
-                        {/* Thống kê 5 tiêu chuẩn (Chỉ đếm hoạt động APPROVED) */}
+                        {/* Thống kê 5 tiêu chuẩn (Chỉ đếm APPROVED) */}
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                             {Object.entries(CRITERIA_MAP).map(([key, label]) => {
                                 const count = (statsByStandard as any)[key] || 0;
@@ -340,18 +344,18 @@ export default function StudentPortfolioPage() {
                             })}
                         </div>
 
-                        {/* Danh sách hoạt động đã ghi nhận */}
+                        {/* Danh sách hoạt động */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between px-1">
                                 <h3 className="text-sm font-bold text-[#001C44]">Lịch sử hoạt động đã ghi nhận</h3>
-                                <span className="text-xs text-slate-500">{records.length} hoạt động</span>
+                                <span className="text-xs text-slate-500">{records.length} hoạt động trong hồ sơ</span>
                             </div>
 
                             {loading ? (
                                 <div className="py-12 text-center text-xs text-slate-500">Đang tải hồ sơ tích lũy...</div>
                             ) : records.length === 0 ? (
                                 <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500 text-xs space-y-3">
-                                    <p>MSSV <strong>{currentMssv}</strong> chưa lưu hoạt động nào.</p>
+                                    <p>MSSV <strong>{currentMssv}</strong> chưa có hoạt động nào được lưu trữ.</p>
                                     <button
                                         onClick={() => setIsModalOpen(true)}
                                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0C5776] text-white text-xs font-semibold hover:bg-[#001C44] transition-colors"
@@ -369,10 +373,10 @@ export default function StudentPortfolioPage() {
                                         <div
                                             key={r.id}
                                             className={`border rounded-xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${isRejected
-                                                ? 'bg-rose-50/40 border-rose-200'
-                                                : isPending
-                                                    ? 'bg-amber-50/30 border-amber-200'
-                                                    : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-rose-50/50 border-rose-200'
+                                                    : isPending
+                                                        ? 'bg-amber-50/30 border-amber-200'
+                                                        : 'bg-white border-slate-200 hover:border-slate-300'
                                                 }`}
                                         >
                                             <div className="space-y-1.5 flex-1">
@@ -405,7 +409,7 @@ export default function StudentPortfolioPage() {
                                                     </span>
                                                 </div>
 
-                                                <h4 className={`text-sm font-bold ${isRejected ? 'text-rose-900 line-through' : 'text-[#001C44]'}`}>
+                                                <h4 className={`text-sm font-bold ${isRejected ? 'text-rose-900 line-through opacity-75' : 'text-[#001C44]'}`}>
                                                     {r.activity_title}
                                                 </h4>
 
@@ -414,11 +418,11 @@ export default function StudentPortfolioPage() {
                                                 </p>
 
                                                 {r.organizer && (
-                                                    <p className="text-xs text-slate-500">Đơn vị: {r.organizer}</p>
+                                                    <p className="text-xs text-slate-500">Đơn vị tổ chức: {r.organizer}</p>
                                                 )}
 
                                                 {isRejected && (
-                                                    <p className="text-xs text-rose-600 font-medium">
+                                                    <p className="text-[11px] text-rose-600 font-medium pt-0.5">
                                                         * Hoạt động này không được hội đồng thông qua tiêu chí SV5T. Bạn có thể tự gỡ khỏi hồ sơ bằng nút xóa bên cạnh.
                                                     </p>
                                                 )}
@@ -428,16 +432,16 @@ export default function StudentPortfolioPage() {
                                                         href={r.proof_url}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="text-xs text-[#0C5776] hover:underline inline-flex items-center gap-1 font-medium pt-0.5"
+                                                        className="text-xs text-[#0C5776] hover:underline inline-flex items-center gap-1 font-medium pt-1"
                                                     >
                                                         Xem minh chứng <ExternalLink className="w-3 h-3" />
                                                     </a>
                                                 )}
                                             </div>
 
-                                            {/* Nút để sinh viên tự bấm xóa thủ công */}
+                                            {/* Nút sinh viên tự xóa thủ công */}
                                             <button
-                                                onClick={() => handleDeleteRecord(r.id)}
+                                                onClick={() => handleDeleteRecord(r.id, r.activity_title)}
                                                 title="Xóa hoạt động này khỏi hồ sơ của bạn"
                                                 className="shrink-0 p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                                             >
@@ -470,14 +474,14 @@ export default function StudentPortfolioPage() {
                             </button>
                         </div>
 
-                        {/* Chọn cách thức ghi nhận */}
+                        {/* Chọn chế độ */}
                         <div className="flex border-b border-slate-100 px-6 pt-3 gap-4">
                             <button
                                 type="button"
                                 onClick={() => setAddMode('SYSTEM')}
                                 className={`pb-2.5 text-xs font-semibold border-b-2 transition-all ${addMode === 'SYSTEM'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                                        ? 'border-[#0C5776] text-[#001C44]'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600'
                                     }`}
                             >
                                 Chọn từ hoạt động trên hệ thống
@@ -486,11 +490,11 @@ export default function StudentPortfolioPage() {
                                 type="button"
                                 onClick={() => setAddMode('CUSTOM')}
                                 className={`pb-2.5 text-xs font-semibold border-b-2 transition-all ${addMode === 'CUSTOM'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                                        ? 'border-[#0C5776] text-[#001C44]'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600'
                                     }`}
                             >
-                                Tự nhập hoạt động khác
+                                Tự nhập hoạt động bên ngoài
                             </button>
                         </div>
 
@@ -512,7 +516,7 @@ export default function StudentPortfolioPage() {
                                         ))}
                                     </select>
                                     <p className="text-[11px] text-slate-400 mt-1.5">
-                                        * Khi chọn hoạt động trên hệ thống, kết quả rà soát của BTK sẽ tự động cập nhật vào hồ sơ của bạn.
+                                        * Khi hoạt động trên hệ thống có cập nhật duyệt/loại từ BTK, hồ sơ của bạn sẽ tự động đồng bộ theo.
                                     </p>
                                 </div>
                             ) : (
@@ -522,7 +526,7 @@ export default function StudentPortfolioPage() {
                                         <input
                                             type="text"
                                             required
-                                            placeholder="VD: Tham gia hiến máu tình nguyện đợt 1..."
+                                            placeholder="VD: Giải chạy bán marathon học sinh - sinh viên..."
                                             value={customForm.activity_title}
                                             onChange={(e) => setCustomForm({ ...customForm, activity_title: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
@@ -553,7 +557,7 @@ export default function StudentPortfolioPage() {
                                     </div>
 
                                     <div>
-                                        <label className="block font-semibold mb-1 text-[#001C44]">Tiêu chuẩn SV5T *</label>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Tiêu chuẩn SV5T hướng tới *</label>
                                         <select
                                             value={customForm.target_standard}
                                             onChange={(e) => setCustomForm({
