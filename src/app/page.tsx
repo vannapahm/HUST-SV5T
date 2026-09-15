@@ -275,20 +275,36 @@ export default function HomePage() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                <span className="font-semibold text-slate-500">Tiêu chuẩn:</span>
-                <select
-                  value={selectedStandard}
-                  onChange={(e) => setSelectedStandard(e.target.value)}
-                  className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
-                >
-                  <option value="ALL">Toàn bộ 5 tiêu chuẩn</option>
-                  <option value="DAO_DUC">Đạo đức tốt</option>
-                  <option value="HOC_TAP">Học tập tốt</option>
-                  <option value="THE_LUC">Thể lực tốt</option>
-                  <option value="TINH_NGUYEN">Tình nguyện tốt</option>
-                  <option value="HOI_NHAP">Hội nhập tốt</option>
-                </select>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-slate-500">Năm học:</span>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-semibold text-[#0C5776] focus:outline-none focus:border-[#0C5776] cursor-pointer"
+                  >
+                    <option value="2024-2025">2024 – 2025</option>
+                    <option value="2025-2026">2025 – 2026</option>
+                    <option value="2026-2027">2026 – 2027</option>
+                    <option value="2027-2028">2027 – 2028</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-slate-500">Tiêu chuẩn:</span>
+                  <select
+                    value={selectedStandard}
+                    onChange={(e) => setSelectedStandard(e.target.value)}
+                    className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776] cursor-pointer"
+                  >
+                    <option value="ALL">Toàn bộ 5 tiêu chuẩn</option>
+                    <option value="DAO_DUC">Đạo đức tốt</option>
+                    <option value="HOC_TAP">Học tập tốt</option>
+                    <option value="THE_LUC">Thể lực tốt</option>
+                    <option value="TINH_NGUYEN">Tình nguyện tốt</option>
+                    <option value="HOI_NHAP">Hội nhập tốt</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
