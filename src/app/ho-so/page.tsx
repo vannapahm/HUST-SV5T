@@ -337,6 +337,12 @@ export default function StudentPortfolioPage() {
 
         const payload = {
             ...academicData,
+            drl_sem1: Number(academicData.drl_sem1) || 0,
+            drl_sem2: Number(academicData.drl_sem2) || 0,
+            gpa_sem1: Number(academicData.gpa_sem1) || 0,
+            credits_sem1: Number(academicData.credits_sem1) || 0,
+            gpa_sem2: Number(academicData.gpa_sem2) || 0,
+            credits_sem2: Number(academicData.credits_sem2) || 0,
             student_id: currentMssv,
             updated_at: new Date().toISOString()
         };
