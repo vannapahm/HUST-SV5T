@@ -186,36 +186,40 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
                 ],
                 elective: [
                     'Có đề tài NCKH (không áp dụng đối với luận văn tốt nghiệp) đạt giải từ cấp tỉnh, thành phố trở lên.',
-                    'Có ít nhất 01 bài báo khoa học đăng trên tạp chí quốc tế uy tín thuộc danh mục Scopus hoặc Web of Science (WoS).',
-                    'Đoạt giải Nhất, Nhì, Ba trong các kỳ thi Olympic sinh viên toàn quốc hoặc cuộc thi sáng tạo, khởi nghiệp cấp quốc gia/quốc tế.'
+                    'Tác giả bài viết đăng trên tạp chí khoa học quốc tế uy tín, có mã số chuẩn quốc tế ISSN trong danh mục WoS/Scopus (Q1, Q2). Tác giả chính bài viết đăng trên tạp chí khoa học quốc tế uy tín, có mã số chuẩn quốc tế ISSN trong danh mục WoS/Scopus (Q3, Q4).',
+                    'Có sản phẩm sáng tạo được cấp bằng sáng chế, cấp giấy phép xuất bản hoặc được các giải thưởng từ cấp tỉnh trở lên.',
+                    'Đạt giải Ba trở lên trong các cuộc thi về học thuật, khoa học kỹ thuật, ý tưởng sáng tạo khởi nghiệp... cấp quốc gia, quốc tế.'
                 ]
             },
             THE_LUC: {
                 mandatory: [
-                    'Đạt danh hiệu “Sinh viên khỏe” cấp Tỉnh/Thành phố hoặc cấp Trung ương.'
+                    'Tham gia và đạt giải các hoạt động thể thao cấp ĐH trở lên hoặc tham gia các hoạt động thể thao cấp TW.'
                 ],
                 elective: [
-                    'Đoạt huy chương tại các Đại hội thể thao, giải vô địch thể thao cấp quốc gia hoặc quốc tế.',
-                    'Là vận động viên thể thao được công nhận cấp kiện tướng hoặc cấp 1 quốc gia.'
-                ]
+                    'Tham gia và đạt giải Ba trở lên trong các hoạt động thể thao từ cấp tỉnh trở lên.'
+                ],
+                note: 'Đối với sinh viên gặp khó khăn trong học tập do mắc bệnh mãn tính, bị khuyết tật, bị tai nạn hoặc hoặc bị bệnh phải điều trị được miễn học phần thực hành môn GDTC, GDQP-AN cần có xác nhận của Nhà trường để được miễn xét tiêu chí Thể lực tốt.'
             },
             TINH_NGUYEN: {
                 mandatory: [
-                    'Tham gia thường xuyên các hoạt động tình nguyện xã hội, đạt từ 05 ngày tình nguyện cộng dồn trở lên trong năm.',
-                    'Có hành động dũng cảm cứu người hoặc tham gia hiến máu tình nguyện tích cực có xác nhận.'
+                    'Tham gia ít nhất 05 ngày tình nguyện/năm (được tính theo số ngày thực tế tham gia các hoạt động tình nguyện cộng dồn).'
                 ],
-                priority: [
-                    'Được Ban Chấp hành Trung ương Đoàn hoặc Ban Thư ký Trung ương Hội Sinh viên Việt Nam tặng Bằng khen về hoạt động tình nguyện vì cộng đồng.'
+                elective: [
+                    'Là người sáng lập hoặc đồng sáng lập các dự án tình nguyện đem lại kết quả thiết thực đối với tổ chức, đơn vị được thụ hưởng và được nhận xét, đánh giá giới thiệu từ tổ chức, đơn vị thụ hưởng.',
+                    'Được khen thưởng từ cấp tỉnh trở lên về hoạt động tình nguyện.'
                 ]
             },
             HOI_NHAP: {
                 mandatory: [
-                    'Đạt chứng chỉ ngoại ngữ quốc tế tương đương TOEIC 700+, IELTS 6.5+, TOEFL iBT 79+ trở lên.'
+                    'Đạt chứng chỉ tiếng Anh trình độ B2 (theo khung tham chiếu châu Âu) hoặc tương đương B2 hoặc chứng chỉ ngoại ngữ khác ở trình độ tương đương trở lên; hoặc tổng điểm các học phần ngoại ngữ (trừ môn ngoại ngữ chuyên ngành) tích lũy từ năm nhất tới thời điểm xét đạt từ 3.4/4.0 trở lên.',
+                    'Tham gia ít nhất 01 hoạt động giao lưu quốc tế: Hội nghị, hội thảo quốc tế, các chương trình gặp gỡ, giao lưu, hợp tác với thanh niên, sinh viên quốc tế trong và ngoài nước.'
                 ],
                 elective: [
-                    'Đại diện thanh niên, sinh viên Việt Nam tham gia các hội nghị, diễn đàn giao lưu thanh niên quốc tế chính thức.',
-                    'Đoạt giải trong các cuộc thi tiếng Anh, Olympic ngoại ngữ hoặc cuộc thi tranh biện quy mô toàn quốc/quốc tế.'
-                ]
+                    'Là thành viên ban chủ nhiệm các câu lạc bộ, đội, nhóm ngoại ngữ tại các cơ sở giáo dục, địa bàn dân cư, thường xuyên tổ chức các hoạt động giao lưu, trao đổi nâng cao năng lực ngoại ngữ và hội nhập quốc tế.',
+                    'Đạt giải Ba trở lên tại các cuộc thi về kiến thức hội nhập hoặc các cuộc thi học thuật bằng ngoại ngữ từ cấp tỉnh trở lên.',
+                    'Đạt chứng chỉ tương đương với trình độ B1 theo khung chiếu châu Âu đối với ít nhất 02 ngoại ngữ khác nhau trở lên. Riêng đối với chứng chỉ tiếng Anh, cần đạt trình độ B2 hoặc tương đương B2 trở lên.'
+                ],
+                note: 'Việc quy đổi giá trị tương đương của các chứng chỉ ngoại ngữ khác nhau căn cứ theo Thông tư số 01/2014/TT-BGDĐT và Thông tư số 23/2021/TT-BGDĐT của Bộ Giáo dục và Đào tạo.'
             }
         }
     }
