@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     ArrowLeft, PlusCircle, Trash2, Calendar, Award,
     ExternalLink, User, Sparkles, X, LogOut, ArrowRight,
-    CheckCircle2, Clock, AlertCircle, Lock, KeyRound, ShieldCheck
+    CheckCircle2, Clock, AlertCircle, Lock, KeyRound
 } from 'lucide-react';
 import { CRITERIA_TREE } from '@/data/criteria';
 
@@ -43,12 +43,11 @@ const CRITERIA_MAP: Record<string, string> = {
 };
 
 export default function StudentPortfolioPage() {
-    // Trạng thái đăng nhập bảo mật: 'INPUT_MSSV' | 'SET_PIN' | 'ENTER_PIN' | 'AUTHENTICATED'
     const [authStep, setAuthStep] = useState<'INPUT_MSSV' | 'SET_PIN' | 'ENTER_PIN' | 'AUTHENTICATED'>('INPUT_MSSV');
 
     const [mssvInput, setMssvInput] = useState('');
     const [currentMssv, setCurrentMssv] = useState<string>('');
-    const [savedPin, setSavedPin] = useState<string>(''); // PIN trong CSDL
+    const [savedPin, setSavedPin] = useState<string>('');
 
     // Form nhập / tạo PIN
     const [pinInput, setPinInput] = useState('');
@@ -105,7 +104,7 @@ export default function StudentPortfolioPage() {
         setLoading(false);
     };
 
-    // BƯỚC 1: KIỂM TRA MSSV ĐÃ CÓ MÃ PIN CHƯA
+    // KIỂM TRA MSSV ĐÃ THIẾT LẬP MÃ PIN CHƯA
     const handleCheckMssv = async (e: React.FormEvent) => {
         e.preventDefault();
         const cleanMssv = mssvInput.trim();
@@ -119,7 +118,6 @@ export default function StudentPortfolioPage() {
         setPinConfirm('');
         setCurrentMssv(cleanMssv);
 
-        // Tra cứu trong bảng student_profiles
         const { data, error } = await supabase
             .from('student_profiles')
             .select('pin_code')
@@ -132,20 +130,18 @@ export default function StudentPortfolioPage() {
         }
 
         if (data && data.pin_code) {
-            // Đã có mã PIN -> Yêu cầu nhập PIN
             setSavedPin(data.pin_code);
             setAuthStep('ENTER_PIN');
         } else {
-            // Chưa có mã PIN -> Yêu cầu tạo mới mã PIN
             setAuthStep('SET_PIN');
         }
     };
 
-    // BƯỚC 2A: TẠO MÃ PIN LẦN ĐẦU
+    // TẠO MÃ PIN 6 SỐ LẦN ĐẦU
     const handleCreatePin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (pinInput.length < 4 || pinInput.length > 6) {
-            setPinError('Mã PIN phải có từ 4 đến 6 chữ số!');
+        if (!/^\d{6}$/.test(pinInput)) {
+            setPinError('Mã PIN phải bao gồm đúng 6 chữ số!');
             return;
         }
         if (pinInput !== pinConfirm) {
@@ -165,14 +161,14 @@ export default function StudentPortfolioPage() {
         setSavedPin(pinInput);
         setAuthStep('AUTHENTICATED');
         fetchRecords(currentMssv);
-        alert('Tạo mã PIN thành công! Hãy ghi nhớ mã PIN này cho các lần truy cập sau.');
+        alert('Tạo mã PIN thành công! Hãy ghi nhớ mã PIN 6 số này cho các lần tra cứu sau.');
     };
 
-    // BƯỚC 2B: XÁC MINH MÃ PIN ĐÃ CÓ
+    // XÁC MINH MÃ PIN
     const handleVerifyPin = (e: React.FormEvent) => {
         e.preventDefault();
         if (pinInput !== savedPin) {
-            setPinError('Mã PIN không chính xác! Vui lòng thử lại.');
+            setPinError('Mã PIN không chính xác! Nếu quên mã, vui lòng liên hệ Ban Thư ký để được đặt lại.');
             return;
         }
 
@@ -187,8 +183,8 @@ export default function StudentPortfolioPage() {
             alert('Mã PIN cũ không chính xác!');
             return;
         }
-        if (newPinInput.length < 4 || newPinInput.length > 6) {
-            alert('Mã PIN mới phải có từ 4 đến 6 ký tự số!');
+        if (!/^\d{6}$/.test(newPinInput)) {
+            alert('Mã PIN mới phải bao gồm đúng 6 chữ số!');
             return;
         }
 
@@ -209,7 +205,7 @@ export default function StudentPortfolioPage() {
         alert('Đổi mã PIN thành công!');
     };
 
-    // ĐĂNG XUẤT / ĐỔI MSSV
+    // ĐĂNG XUẤT
     const handleLogout = () => {
         setAuthStep('INPUT_MSSV');
         setCurrentMssv('');
@@ -294,7 +290,6 @@ export default function StudentPortfolioPage() {
         }
     };
 
-    // Chỉ tính vào tổng tiêu chuẩn các hoạt động APPROVED
     const statsByStandard = {
         DAO_DUC: records.filter((r) => r.target_standard === 'DAO_DUC' && r.status === 'APPROVED').length,
         HOC_TAP: records.filter((r) => r.target_standard === 'HOC_TAP' && r.status === 'APPROVED').length,
@@ -325,11 +320,10 @@ export default function StudentPortfolioPage() {
                                     Hồ sơ tích lũy Sinh viên 5 tốt
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Bảo mật thông tin cá nhân bằng Mã PIN riêng biệt cho từng sinh viên.
+                                    Theo dõi tiến độ, số lượng tiêu chí đạt chuẩn và lưu trữ minh chứng cá nhân.
                                 </p>
                             </div>
 
-                            {/* Các nút hành động khi đã đăng nhập thành công */}
                             {authStep === 'AUTHENTICATED' && (
                                 <div className="flex items-center gap-2">
                                     <button
@@ -372,7 +366,7 @@ export default function StudentPortfolioPage() {
                             <div>
                                 <h2 className="text-lg font-bold text-[#001C44]">Cổng tra cứu hồ sơ sinh viên</h2>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Nhập Mã số sinh viên của bạn để tiếp tục. Mỗi hồ sơ được bảo vệ riêng bằng Mã PIN cá nhân.
+                                    Nhập Mã số sinh viên (MSSV) của bạn để truy cập hồ sơ tích lũy.
                                 </p>
                             </div>
 
@@ -399,32 +393,32 @@ export default function StudentPortfolioPage() {
                     </div>
                 )}
 
-                {/* ==================== MÀN HÌNH 2A: THIẾT LẬP MÃ PIN LẦN ĐẦU ==================== */}
+                {/* ==================== MÀN HÌNH 2A: THIẾT LẬP MÃ PIN 6 SỐ ==================== */}
                 {authStep === 'SET_PIN' && (
                     <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-150">
                         <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-5">
-                            <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-200">
-                                <ShieldCheck className="w-8 h-8" />
+                            <div className="w-16 h-16 bg-[#0C5776]/10 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
+                                <Lock className="w-8 h-8" />
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold text-[#001C44]">Thiết lập mã PIN bảo vệ</h2>
+                                <h2 className="text-lg font-bold text-[#001C44]">Thiết lập mã PIN cá nhân</h2>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    MSSV: <strong className="text-[#001C44]">{currentMssv}</strong> chưa có mã PIN. Vui lòng tạo mã PIN (4–6 số) để không ai khác có thể xem hồ sơ của bạn.
+                                    MSSV: <strong className="text-[#001C44]">{currentMssv}</strong>. Vui lòng tạo mã PIN cố định gồm <strong>đúng 6 chữ số</strong> để bảo mật hồ sơ của bạn.
                                 </p>
                             </div>
 
                             <form onSubmit={handleCreatePin} className="space-y-3 text-left">
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Mã PIN mới (4 - 6 số) *</label>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Mã PIN mới (6 chữ số) *</label>
                                     <input
                                         type="password"
                                         required
                                         maxLength={6}
                                         autoFocus
-                                        placeholder="Nhập mã PIN..."
+                                        placeholder="Nhập 6 số..."
                                         value={pinInput}
-                                        onChange={(e) => setPinInput(e.target.value)}
+                                        onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
                                         className="w-full px-4 py-2.5 text-center text-base tracking-widest font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776]"
                                     />
                                 </div>
@@ -435,9 +429,9 @@ export default function StudentPortfolioPage() {
                                         type="password"
                                         required
                                         maxLength={6}
-                                        placeholder="Nhập lại mã PIN..."
+                                        placeholder="Nhập lại 6 số..."
                                         value={pinConfirm}
-                                        onChange={(e) => setPinConfirm(e.target.value)}
+                                        onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, ''))}
                                         className="w-full px-4 py-2.5 text-center text-base tracking-widest font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776]"
                                     />
                                 </div>
@@ -458,7 +452,7 @@ export default function StudentPortfolioPage() {
                                         type="submit"
                                         className="w-2/3 py-2.5 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
                                     >
-                                        Lưu mã PIN & Vào hồ sơ
+                                        Lưu mã PIN & Tiếp tục
                                     </button>
                                 </div>
                             </form>
@@ -466,7 +460,7 @@ export default function StudentPortfolioPage() {
                     </div>
                 )}
 
-                {/* ==================== MÀN HÌNH 2B: NHẬP MÃ PIN ĐỂ MỞ KHÓA ==================== */}
+                {/* ==================== MÀN HÌNH 2B: NHẬP MÃ PIN 6 SỐ ==================== */}
                 {authStep === 'ENTER_PIN' && (
                     <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-150">
                         <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-5">
@@ -475,9 +469,9 @@ export default function StudentPortfolioPage() {
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold text-[#001C44]">Mở khóa hồ sơ cá nhân</h2>
+                                <h2 className="text-lg font-bold text-[#001C44]">Nhập mã PIN truy cập</h2>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Hồ sơ MSSV: <strong className="text-[#001C44]">{currentMssv}</strong> đã được bảo vệ. Vui lòng nhập mã PIN cá nhân của bạn.
+                                    Hồ sơ MSSV: <strong className="text-[#001C44]">{currentMssv}</strong>. Nhập mã PIN 6 số của bạn để mở khóa.
                                 </p>
                             </div>
 
@@ -489,7 +483,7 @@ export default function StudentPortfolioPage() {
                                     maxLength={6}
                                     placeholder="••••••"
                                     value={pinInput}
-                                    onChange={(e) => setPinInput(e.target.value)}
+                                    onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
                                     className="w-full px-4 py-3 text-xl text-center font-bold tracking-widest border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white"
                                 />
 
@@ -517,18 +511,15 @@ export default function StudentPortfolioPage() {
                     </div>
                 )}
 
-                {/* ==================== MÀN HÌNH 3: HỒ SƠ TÍCH LŨY (ĐÃ XÁC THỰC) ==================== */}
+                {/* ==================== MÀN HÌNH 3: HỒ SƠ TÍCH LŨY ==================== */}
                 {authStep === 'AUTHENTICATED' && (
                     <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-150">
-                        {/* Thanh thông tin sinh viên */}
+                        {/* Thanh thông tin sinh viên (ĐÃ BỎ DÒNG "ĐÃ BẢO VỆ BẰNG MÃ PIN") */}
                         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <span className="text-xs text-slate-500">Đang xem hồ sơ bảo mật:</span>
-                                <div className="text-xl font-bold text-[#001C44] flex items-center gap-2">
-                                    <span>MSSV: {currentMssv}</span>
-                                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                                        <Lock className="w-3 h-3" /> Đã bảo vệ bằng PIN
-                                    </span>
+                                <span className="text-xs text-slate-500">Hồ sơ cá nhân:</span>
+                                <div className="text-xl font-bold text-[#001C44]">
+                                    MSSV: {currentMssv}
                                 </div>
                             </div>
 
@@ -671,7 +662,7 @@ export default function StudentPortfolioPage() {
                 )}
             </div>
 
-            {/* MODAL ĐỔI MÃ PIN */}
+            {/* MODAL ĐỔI MÃ PIN 6 SỐ */}
             {isChangePinOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
                     <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
@@ -683,24 +674,24 @@ export default function StudentPortfolioPage() {
                         </div>
                         <form onSubmit={handleChangePin} className="space-y-3 text-xs">
                             <div>
-                                <label className="block font-semibold mb-1">Mã PIN hiện tại *</label>
+                                <label className="block font-semibold mb-1">Mã PIN hiện tại (6 số) *</label>
                                 <input
                                     type="password"
                                     required
                                     maxLength={6}
                                     value={oldPinInput}
-                                    onChange={(e) => setOldPinInput(e.target.value)}
+                                    onChange={(e) => setOldPinInput(e.target.value.replace(/\D/g, ''))}
                                     className="w-full px-3 py-2 border rounded-lg text-center font-bold tracking-widest"
                                 />
                             </div>
                             <div>
-                                <label className="block font-semibold mb-1">Mã PIN mới (4–6 số) *</label>
+                                <label className="block font-semibold mb-1">Mã PIN mới (đúng 6 số) *</label>
                                 <input
                                     type="password"
                                     required
                                     maxLength={6}
                                     value={newPinInput}
-                                    onChange={(e) => setNewPinInput(e.target.value)}
+                                    onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
                                     className="w-full px-3 py-2 border rounded-lg text-center font-bold tracking-widest"
                                 />
                             </div>
