@@ -67,18 +67,24 @@ const CRITERIA_MAP: Record<string, string> = {
 };
 
 const FACULTIES = [
-    'Trường Kinh tế',
-    'Trường Công nghệ Thông tin & Truyền thông',
+    'Trường Công nghệ Thông tin và Truyền thông',
+    'Trường Điện – Điện tử',
     'Trường Cơ khí',
-    'Trường Điện - Điện tử',
     'Trường Hóa và Khoa học Sự sống',
     'Trường Vật liệu',
-    'Khoa Ngoại ngữ',
+    'Trường Kinh tế',
+    'Khoa Khoa học và Công nghệ giáo dục',
+    'Khoa Vật lý kỹ thuật',
     'Khoa Toán - Tin',
-    'Khoa Vật lý Kỹ thuật',
-    'Khoa Giáo dục Thể chất',
-    'Khoa Giáo dục Quốc phòng & An ninh'
+    'Khoa Ngoại ngữ'
 ];
+
+// Định dạng GPA tối thiểu 1 chữ số, tối đa 2 chữ số thập phân (VD: 3.0 hoặc 3.22)
+const formatGPA = (val: number) => {
+    if (!val || isNaN(val)) return '0.0';
+    const rounded = Number(val.toFixed(2));
+    return rounded % 1 === 0 ? `${rounded}.0` : `${rounded}`;
+};
 
 export default function StudentPortfolioPage() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -106,24 +112,24 @@ export default function StudentPortfolioPage() {
     const [academicData, setAcademicData] = useState<AcademicInfo>({
         student_id: '',
         full_name: '',
-        gender: 'Nữ',
-        birth_year: '2005',
+        gender: 'Nam',
+        birth_year: '',
         ethnicity: 'Kinh',
         class_name: '',
-        student_year: '3',
-        position: 'Sinh viên',
+        student_year: '1',
+        position: '',
         union_status: 'Đoàn viên',
         phone: '',
         email_sis: '',
-        faculty_name: 'Trường Kinh tế',
-        drl_sem1: 100,
-        drl_sem2: 100,
-        gpa_sem1: 3.0,
-        credits_sem1: 20,
-        gpa_sem2: 3.0,
-        credits_sem2: 20,
-        physical_education_status: 'Hoàn thành chương trình đào tạo Giáo dục thể chất (05/05 học phần)',
-        foreign_language_status: 'Miễn học tiếng Anh',
+        faculty_name: 'Trường Công nghệ Thông tin và Truyền thông',
+        drl_sem1: 0,
+        drl_sem2: 0,
+        gpa_sem1: 0,
+        credits_sem1: 0,
+        gpa_sem2: 0,
+        credits_sem2: 0,
+        physical_education_status: 'Hoàn thành đủ 05 học phần GDTC',
+        foreign_language_status: '',
         other_achievements: ''
     });
 
@@ -501,15 +507,15 @@ export default function StudentPortfolioPage() {
                                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-sm"
                                     >
                                         <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
-                                        <span>Thông tin học vụ & Đơn SV5T</span>
+                                        <span>Khai báo Báo cáo thành tích</span>
                                     </button>
 
                                     <button
                                         onClick={() => setIsModalOpen(true)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#BCFEFE] text-[#001C44] text-xs font-semibold hover:bg-white transition-all shadow-sm"
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#BCFEFE] text-[#001C44] text-xs font-semibold hover:bg-white transition-all shadow-sm"
                                     >
                                         <PlusCircle className="w-4 h-4 text-[#0C5776]" />
-                                        Ghi nhận hoạt động
+                                        Thêm hoạt động
                                     </button>
 
                                     <button
@@ -537,32 +543,29 @@ export default function StudentPortfolioPage() {
 
                 {/* ==================== MÀN HÌNH ĐĂNG NHẬP (ĐÃ TỐI ƯU GỌN GÀNG, KHÔNG CUỘN) ==================== */}
                 {!isLoggedIn && (
-                    <div className="max-w-md mx-auto px-4 py-8 sm:py-10 animate-in fade-in zoom-in duration-150">
+                    <div className="max-w-md mx-auto px-4 py-10 animate-in fade-in zoom-in duration-150">
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm space-y-4">
-                            {/* Tiêu đề & Biểu tượng gọn gàng */}
                             <div className="text-center space-y-1">
                                 <div className="w-12 h-12 bg-[#0C5776]/10 text-[#0C5776] rounded-xl flex items-center justify-center mx-auto mb-2">
                                     <User className="w-6 h-6" />
                                 </div>
-                                <h2 className="text-lg font-bold text-[#001C44]">Cổng hồ sơ Sinh viên 5 tốt</h2>
+                                <h2 className="text-lg font-bold text-[#001C44]">Hồ sơ Sinh viên 5 tốt</h2>
                                 <p className="text-xs text-slate-500">
-                                    Tra cứu hoạt động và quản lý tiến độ rèn luyện cá nhân
+                                    Quản lý hoạt động rèn luyện và lập báo cáo thành tích
                                 </p>
                             </div>
 
-                            {/* LƯU Ý ĐƯỢC ĐẨY LÊN ĐẦU: ĐỌC LÀ HIỂU NGAY */}
-                            <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200/80 text-xs text-[#001C44] flex items-start gap-2.5">
+                            <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200/70 text-xs text-slate-700 flex items-start gap-2.5">
                                 <Info className="w-4 h-4 text-[#0C5776] shrink-0 mt-0.5" />
-                                <div className="text-[11px] leading-relaxed text-slate-700">
-                                    <strong className="text-[#0C5776]">Lần đầu truy cập:</strong> Bạn chỉ cần nhập đúng MSSV và <strong>tự đặt một mật khẩu 6 số bất kỳ</strong> để kích hoạt tài khoản.
+                                <div className="text-[11px] leading-relaxed">
+                                    Mật khẩu gồm 6 chữ số. Sinh viên truy cập lần đầu sẽ tự thiết lập mật khẩu trực tiếp tại đây.
                                 </div>
                             </div>
 
-                            {/* Form đăng nhập / Kích hoạt */}
-                            <form onSubmit={handleLoginSubmit} className="space-y-3 text-left">
+                            <form onSubmit={handleLoginSubmit} className="space-y-3.5 text-left">
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                        Mã số sinh viên *
+                                        MSSV *
                                     </label>
                                     <div className="relative">
                                         <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -570,7 +573,7 @@ export default function StudentPortfolioPage() {
                                             type="text"
                                             required
                                             autoFocus
-                                            placeholder="VD: 20233017..."
+                                            placeholder="Nhập MSSV..."
                                             value={mssvInput}
                                             onChange={(e) => setMssvInput(e.target.value)}
                                             className="w-full pl-9 pr-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
@@ -588,7 +591,7 @@ export default function StudentPortfolioPage() {
                                             type="password"
                                             required
                                             maxLength={6}
-                                            placeholder="••••••"
+                                            placeholder="Nhập 6 số..."
                                             value={pinInput}
                                             onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
                                             className="w-full pl-9 pr-3 py-2 text-xs font-bold tracking-widest border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
@@ -604,7 +607,7 @@ export default function StudentPortfolioPage() {
                                             onChange={(e) => setRememberMe(e.target.checked)}
                                             className="rounded border-slate-300 text-[#0C5776] focus:ring-0 w-3.5 h-3.5"
                                         />
-                                        <span>Ghi nhớ đăng nhập trên máy này</span>
+                                        <span>Ghi nhớ đăng nhập</span>
                                     </label>
                                 </div>
 
@@ -619,7 +622,7 @@ export default function StudentPortfolioPage() {
                                     disabled={submittingAuth}
                                     className="w-full py-2.5 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-1"
                                 >
-                                    <span>{submittingAuth ? 'Đang kiểm tra...' : 'Truy cập / Kích hoạt hồ sơ'}</span>
+                                    <span>{submittingAuth ? 'Đang xác thực...' : 'Đăng nhập'}</span>
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </form>
@@ -643,12 +646,17 @@ export default function StudentPortfolioPage() {
                                     )}
                                 </div>
                                 <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-3">
-                                    <span>Đơn vị: <strong>{academicData.faculty_name}</strong></span>
+                                    <span>Trường/Khoa: <strong>{academicData.faculty_name}</strong></span>
                                     <span>•</span>
-                                    <span>GPA tích lũy: <strong className="text-[#0C5776]">{calculatedStats.averageGpa || '0.00'}/4.0</strong></span>
+                                    <span>GPA trung bình: <strong className="text-[#0C5776]">{formatGPA(calculatedStats.averageGpa)}/4.0</strong></span>
                                     <span>•</span>
                                     <span>ĐRL trung bình: <strong className="text-emerald-700">{calculatedStats.averageDrl || '0'}</strong></span>
                                 </div>
+                            </div>
+
+                            <div className="text-right">
+                                <span className="text-xs text-slate-500">Tiêu chí được công nhận:</span>
+                                <div className="text-lg font-bold text-[#0C5776]">{totalApproved} tiêu chí</div>
                             </div>
 
                             <div className="flex items-center gap-4 text-right">
@@ -684,7 +692,7 @@ export default function StudentPortfolioPage() {
                         {/* Danh sách hoạt động */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between px-1">
-                                <h3 className="text-sm font-bold text-[#001C44]">Lịch sử hoạt động đã tích lũy</h3>
+                                <h3 className="text-sm font-bold text-[#001C44]">Danh sách hoạt động đã lưu</h3>
                                 <span className="text-xs text-slate-500">{records.length} hoạt động trong hồ sơ</span>
                             </div>
 
@@ -725,7 +733,7 @@ export default function StudentPortfolioPage() {
                                                     {isRejected ? (
                                                         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-300 flex items-center gap-1">
                                                             <AlertCircle className="w-3 h-3" />
-                                                            Không công nhận (Không tính điểm)
+                                                            Không công nhận
                                                         </span>
                                                     ) : isPending ? (
                                                         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
@@ -815,10 +823,10 @@ export default function StudentPortfolioPage() {
 
                         <form onSubmit={handleSaveAcademicInfo} className="flex flex-col overflow-hidden">
                             <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700 max-h-[calc(92vh-130px)]">
-                                {/* Khối 1: Thông tin hành chính */}
+                                {/* Khối 1: Thông tin cá nhân */}
                                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
                                     <span className="font-bold text-[#001C44] uppercase tracking-wider text-[11px] block">
-                                        1. Thông tin lý lịch sinh viên
+                                        1. Thông tin cá nhân
                                     </span>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div className="sm:col-span-2">
@@ -826,7 +834,7 @@ export default function StudentPortfolioPage() {
                                             <input
                                                 type="text"
                                                 required
-                                                placeholder="VD: Nguyễn Văn A..."
+                                                placeholder="VD: Nguyễn Văn A"
                                                 value={academicData.full_name}
                                                 onChange={(e) => setAcademicData({ ...academicData, full_name: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
@@ -850,6 +858,7 @@ export default function StudentPortfolioPage() {
                                             <label className="block font-semibold mb-1">Năm sinh</label>
                                             <input
                                                 type="text"
+                                                placeholder="VD: 2005"
                                                 value={academicData.birth_year}
                                                 onChange={(e) => setAcademicData({ ...academicData, birth_year: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
@@ -859,27 +868,28 @@ export default function StudentPortfolioPage() {
                                             <label className="block font-semibold mb-1">Dân tộc</label>
                                             <input
                                                 type="text"
+                                                placeholder="VD: Kinh"
                                                 value={academicData.ethnicity}
                                                 onChange={(e) => setAcademicData({ ...academicData, ethnicity: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Sinh viên năm</label>
+                                            <label className="block font-semibold mb-1">Năm học thứ</label>
                                             <select
                                                 value={academicData.student_year}
                                                 onChange={(e) => setAcademicData({ ...academicData, student_year: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                                             >
-                                                <option value="1">Năm 1 (K70)</option>
-                                                <option value="2">Năm 2 (K69)</option>
-                                                <option value="3">Năm 3 (K68)</option>
-                                                <option value="4">Năm 4 (K67)</option>
-                                                <option value="5">Năm 5</option>
+                                                <option value="1">Năm thứ 1</option>
+                                                <option value="2">Năm thứ 2</option>
+                                                <option value="3">Năm thứ 3</option>
+                                                <option value="4">Năm thứ 4</option>
+                                                <option value="5">Năm thứ 5</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Đoàn/Đảng</label>
+                                            <label className="block font-semibold mb-1">Đoàn viên / Đảng viên</label>
                                             <select
                                                 value={academicData.union_status}
                                                 onChange={(e) => setAcademicData({ ...academicData, union_status: e.target.value })}
@@ -893,18 +903,18 @@ export default function StudentPortfolioPage() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block font-semibold mb-1">Lớp sinh hoạt - Khóa *</label>
+                                            <label className="block font-semibold mb-1">Lớp *</label>
                                             <input
                                                 type="text"
                                                 required
-                                                placeholder="VD: CTTT Phân tích KD 02 – K68..."
+                                                placeholder="VD: CTTT Phân tích KD 02 – K68"
                                                 value={academicData.class_name}
                                                 onChange={(e) => setAcademicData({ ...academicData, class_name: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Trường/Khoa quản ngành *</label>
+                                            <label className="block font-semibold mb-1">Trường/Khoa *</label>
                                             <select
                                                 value={academicData.faculty_name}
                                                 onChange={(e) => setAcademicData({ ...academicData, faculty_name: e.target.value })}
@@ -922,43 +932,55 @@ export default function StudentPortfolioPage() {
                                             <label className="block font-semibold mb-1">Chức vụ Đoàn - Hội</label>
                                             <input
                                                 type="text"
-                                                placeholder="VD: Chi hội Trưởng / Sinh viên..."
+                                                placeholder="VD: Chi hội Trưởng..."
                                                 value={academicData.position}
                                                 onChange={(e) => setAcademicData({ ...academicData, position: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                                             />
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">Không có ghi Không</span>
                                         </div>
                                         <div>
                                             <label className="block font-semibold mb-1">Số điện thoại *</label>
                                             <input
                                                 type="text"
                                                 required
-                                                placeholder="09xxxxxxxx"
+                                                placeholder="VD: 0912345678"
                                                 value={academicData.phone}
                                                 onChange={(e) => setAcademicData({ ...academicData, phone: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Email SIS HUST *</label>
-                                            <input
-                                                type="email"
-                                                required
-                                                placeholder="ten.ho@sis.hust.edu.vn"
-                                                value={academicData.email_sis}
-                                                onChange={(e) => setAcademicData({ ...academicData, email_sis: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-                                            />
+                                            <label className="block font-semibold mb-1">Email SIS *</label>
+                                            <div className="flex rounded-lg border border-slate-300 overflow-hidden bg-white focus-within:border-[#0C5776]">
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="anh.ptv233017"
+                                                    value={academicData.email_sis.replace(/@sis\.hust\.edu\.vn$/i, '')}
+                                                    onChange={(e) => {
+                                                        const prefix = e.target.value.trim().replace(/@sis\.hust\.edu\.vn$/i, '');
+                                                        setAcademicData({
+                                                            ...academicData,
+                                                            email_sis: prefix ? `${prefix}@sis.hust.edu.vn` : ''
+                                                        });
+                                                    }}
+                                                    className="w-full px-3 py-2 text-xs border-0 focus:outline-none bg-transparent"
+                                                />
+                                                <span className="bg-slate-100 px-2.5 py-2 text-[11px] text-slate-500 font-mono select-none border-l border-slate-200 shrink-0">
+                                                    @sis.hust.edu.vn
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Khối 2: Điểm học tập & Điểm rèn luyện */}
+                                {/* Khối 2: Kết quả Học tập & Rèn luyện */}
                                 <div className="bg-blue-50/50 p-3.5 rounded-xl border border-blue-200 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="font-bold text-[#001C44] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                                             <Calculator className="w-4 h-4 text-[#0C5776]" />
-                                            2. Điểm học tập (GPA) & Điểm rèn luyện (ĐRL) 2 kỳ
+                                            2. Kết quả Học tập & Rèn luyện
                                         </span>
                                         <span className="text-[11px] text-blue-700 font-semibold">
                                             Tự động tính theo trọng số tín chỉ
@@ -1066,27 +1088,32 @@ export default function StudentPortfolioPage() {
                                     </div>
                                 </div>
 
-                                {/* Khối 3: Thể chất & Ngoại ngữ */}
+                                {/* Khối 3: Thể lực & Ngoại ngữ */}
                                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
                                     <span className="font-bold text-[#001C44] uppercase tracking-wider text-[11px] block">
-                                        3. Tình trạng Thể chất & Ngoại ngữ
+                                        3. Thể lực & Ngoại ngữ
                                     </span>
                                     <div>
-                                        <label className="block font-semibold mb-1">Tình trạng Giáo dục thể chất *</label>
-                                        <input
-                                            type="text"
-                                            required
+                                        <label className="block font-semibold mb-1">Giáo dục thể chất *</label>
+                                        <select
                                             value={academicData.physical_education_status}
                                             onChange={(e) => setAcademicData({ ...academicData, physical_education_status: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-                                        />
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-xs"
+                                        >
+                                            <option value="Hoàn thành chương trình đào tạo Giáo dục thể chất theo quy định tại Đại học Bách khoa Hà Nội (hoàn thành đủ 05 học phần GDTC).">
+                                                Hoàn thành đủ 05 học phần GDTC
+                                            </option>
+                                            <option value="Không có điểm F nào trong tất cả các học phần Giáo dục thể chất đã học trong 02 học kỳ chính trong năm học.">
+                                                Không có điểm F học phần GDTC trong 02 học kỳ chính
+                                            </option>
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="block font-semibold mb-1">Chứng chỉ / Tình trạng Ngoại ngữ *</label>
+                                        <label className="block font-semibold mb-1">Trình độ Ngoại ngữ *</label>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="VD: Miễn học tiếng Anh / TOEIC nội bộ: 745 ngày 15/4/2025..."
+                                            placeholder="VD: Miễn học tiếng Anh / TOEIC nội bộ: 745 ngày 15/04/2025..."
                                             value={academicData.foreign_language_status}
                                             onChange={(e) => setAcademicData({ ...academicData, foreign_language_status: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
@@ -1101,7 +1128,7 @@ export default function StudentPortfolioPage() {
                                     </span>
                                     <textarea
                                         rows={3}
-                                        placeholder="Ghi các thành tích đóng góp ngoài 5 tiêu chuẩn (VD: Giấy khen Đoàn - Hội năm học trước, hoạt động cơ quan ngoài...)"
+                                        placeholder="Ghi các thành tích đóng góp ngoài 5 tiêu chuẩn..."
                                         value={academicData.other_achievements}
                                         onChange={(e) => setAcademicData({ ...academicData, other_achievements: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
@@ -1123,9 +1150,10 @@ export default function StudentPortfolioPage() {
                                     className="px-5 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 text-xs shadow-sm flex items-center gap-1.5"
                                 >
                                     <Save className="w-3.5 h-3.5" />
-                                    <span>{savingAcademic ? 'Đang lưu...' : 'Lưu thông tin học vụ'}</span>
+                                    <span>{savingAcademic ? 'Đang lưu...' : 'Lưu thông tin'}</span>
                                 </button>
                             </div>
+                            ```[cite: 2, 4]
                         </form>
                     </div>
                 </div>
