@@ -1566,12 +1566,20 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký</label>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (ngày & giờ)</label>
                                     <input
-                                        type="date"
-                                        value={editingActivity.registration_deadline?.split('T')[0] || ''}
+                                        type="datetime-local"
+                                        value={
+                                            editingActivity.registration_deadline
+                                                ? (() => {
+                                                    const d = new Date(editingActivity.registration_deadline);
+                                                    const pad = (n: number) => String(n).padStart(2, '0');
+                                                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                                                })()
+                                                : ''
+                                        }
                                         onChange={(e) => setEditingActivity({ ...editingActivity, registration_deadline: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs"
                                     />
                                 </div>
 
