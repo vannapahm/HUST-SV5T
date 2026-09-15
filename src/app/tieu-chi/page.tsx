@@ -88,23 +88,39 @@ export default function CriteriaGuidePage() {
                 <header className="bg-[#001C44] text-white border-b border-[#0C5776] shadow-sm">
                     <div className="max-w-5xl mx-auto px-4 py-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-[#BCFEFE] hover:underline mb-2">
-                                    <ArrowLeft className="w-3.5 h-3.5" /> Về Trang chủ
-                                </Link>
-                                <div className="inline-block mb-1">
-                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#BCFEFE] bg-[#0C5776]/60 px-2.5 py-0.5 rounded border border-[#2D99AE]/40">
-                                        Đại học Bách khoa Hà Nội
+
+                            {/* KHỐI TIÊU ĐỀ: Bọc riêng từng dòng để không bao giờ bị dính vào nhau */}
+                            <div className="space-y-1.5">
+                                {/* Dòng 1: Nút về trang chủ */}
+                                <div>
+                                    <Link
+                                        href="/"
+                                        className="inline-flex items-center gap-1.5 text-xs text-[#BCFEFE] hover:underline"
+                                    >
+                                        <ArrowLeft className="w-3.5 h-3.5" />
+                                        Về Trang chủ
+                                    </Link>
+                                </div>
+
+                                {/* Dòng 2: Huy hiệu ĐẠI HỌC BÁCH KHOA HÀ NỘI */}
+                                <div>
+                                    <span className="inline-block text-[11px] font-semibold uppercase tracking-wider text-[#BCFEFE] bg-[#0C5776]/60 px-2.5 py-0.5 rounded border border-[#2D99AE]/40">
+                                        ĐẠI HỌC BÁCH KHOA HÀ NỘI
                                     </span>
                                 </div>
-                                <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight">
+
+                                {/* Dòng 3: Tiêu đề chính */}
+                                <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight pt-0.5">
                                     Bộ tiêu chuẩn xét chọn danh hiệu “Sinh viên 5 tốt”
                                 </h1>
-                                <p className="text-xs text-[#BCFEFE]/80 mt-1">
+
+                                {/* Dòng 4: Mô tả các cấp */}
+                                <p className="text-xs text-[#BCFEFE]/80">
                                     Cấp Đại học năm học 2025 - 2026 • Cấp Thành phố • Cấp Trung ương
                                 </p>
                             </div>
 
+                            {/* Khối thống kê hồ sơ tự rà soát bên phải */}
                             <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl p-3.5 flex items-center gap-4 text-xs">
                                 <div>
                                     <div className="text-[#BCFEFE] font-medium">Hồ sơ tự rà soát</div>
@@ -113,11 +129,16 @@ export default function CriteriaGuidePage() {
                                     </div>
                                 </div>
                                 {totalCompleted > 0 && (
-                                    <button onClick={handleResetProgress} title="Đặt lại bảng tự rà soát" className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors">
+                                    <button
+                                        onClick={handleResetProgress}
+                                        title="Đặt lại bảng tự rà soát"
+                                        className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
+                                    >
                                         <RotateCcw className="w-4 h-4" />
                                     </button>
                                 )}
                             </div>
+
                         </div>
                     </div>
                 </header>
