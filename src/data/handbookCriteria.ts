@@ -140,7 +140,7 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
                     'Tham gia ít nhất 05 ngày tình nguyện/ năm (được tính theo số ngày thực tế tham gia các hoạt động tình nguyện cộng đồng).'
                 ],
                 note: 'Ví dụ: Sinh viên A tham gia 3 ngày tình nguyện tại mái ấm nhà mở, 1 lần hiến máu tình nguyện, 1 ngày tình nguyện Chủ nhật xanh, ở những thời điểm khác nhau trong năm sẽ được tính đủ tiêu chuẩn).',
-                priority: [
+                elective: [
                     'Đạt huy hiệu "Chiến sỹ tình nguyện Thủ đô.',
                     'Được khen thưởng cấp ĐH, phường, xã trở lên về hoạt động tình nguyện.'
                 ]
