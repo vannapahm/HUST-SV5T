@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import {
   Calendar, MapPin, Building2, Award, ExternalLink, Filter,
-  Search, Sparkles, BookOpen, User, PlusCircle, CheckCircle2,
+  Search, Sparkles, BookOpen, PlusCircle, CheckCircle2,
   Clock, AlertCircle, ArrowRight, ShieldCheck, Timer
 } from 'lucide-react';
 
@@ -42,7 +42,7 @@ export default function HomePage() {
   // Bộ lọc
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStandard, setSelectedStandard] = useState('ALL');
-  const [selectedStatus, setSelectedStatus] = useState('ALL'); // 'ALL' | 'APPROVED' | 'PENDING'
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
 
   const fetchActivities = async () => {
     const { data, error } = await supabase
@@ -59,7 +59,6 @@ export default function HomePage() {
   useEffect(() => {
     fetchActivities();
 
-    // Tự động tải lại khi mạng phục hồi hoặc quay lại tab
     const handleOnline = () => fetchActivities();
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') fetchActivities();
@@ -68,7 +67,6 @@ export default function HomePage() {
     window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Supabase Realtime cập nhật tức thì
     const channel = supabase
       .channel('realtime_activities_home')
       .on(
@@ -97,7 +95,6 @@ export default function HomePage() {
     return dateStr;
   };
 
-  // Hàm tính toán tình trạng hạn đăng ký & nhấp nháy cảnh báo
   const getDeadlineInfo = (deadlineStr?: string) => {
     if (!deadlineStr) return null;
     const deadline = new Date(deadlineStr);
@@ -119,7 +116,7 @@ export default function HomePage() {
       return {
         text: `Sắp hết hạn: còn ${diffDays === 0 ? 'hôm nay' : `${diffDays} ngày`} (${formatDateVN(deadlineStr)})`,
         isExpired: false,
-        isUrgent: true, // Cảnh báo đỏ nhấp nháy
+        isUrgent: true,
       };
     }
 
@@ -130,7 +127,6 @@ export default function HomePage() {
     };
   };
 
-  // Lọc danh sách hoạt động
   const filteredActivities = useMemo(() => {
     return activities.filter((act) => {
       const actStatus = act.status || 'APPROVED';
@@ -186,7 +182,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#BCFEFE] text-[#001C44] text-xs font-bold hover:bg-white transition-all shadow-sm"
                 >
                   <Sparkles className="w-4 h-4 text-[#0C5776]" />
-                  Hồ sơ cá nhân (MSSV)
+                  Hồ sơ cá nhân
                 </Link>
 
                 <Link
@@ -249,8 +245,8 @@ export default function HomePage() {
                 <button
                   onClick={() => setSelectedStatus('ALL')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStatus === 'ALL'
-                    ? 'bg-[#001C44] text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-[#001C44] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                 >
                   Tất cả ({activities.length})
@@ -258,8 +254,8 @@ export default function HomePage() {
                 <button
                   onClick={() => setSelectedStatus('APPROVED')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${selectedStatus === 'APPROVED'
-                    ? 'bg-emerald-700 text-white shadow-xs'
-                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                      ? 'bg-emerald-700 text-white shadow-xs'
+                      : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
                     }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -268,8 +264,8 @@ export default function HomePage() {
                 <button
                   onClick={() => setSelectedStatus('PENDING')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${selectedStatus === 'PENDING'
-                    ? 'bg-amber-700 text-white shadow-xs'
-                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                      ? 'bg-amber-700 text-white shadow-xs'
+                      : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
                     }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
@@ -295,18 +291,10 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Danh sách hoạt động */}
+          {/* Danh sách hoạt động (ĐÃ BỎ LINK TRÙNG LẶP) */}
           <div className="space-y-4">
-            <div className="text-xs text-slate-500 flex items-center justify-between px-1">
-              <span>
-                Đang hiển thị: <strong className="text-[#001C44]">{filteredActivities.length}</strong> hoạt động
-              </span>
-              <Link
-                href="/ho-so"
-                className="text-xs text-[#0C5776] hover:underline inline-flex items-center gap-1 font-semibold"
-              >
-                Tra cứu hồ sơ tích lũy cá nhân <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+            <div className="text-xs text-slate-500 px-1">
+              Đang hiển thị: <strong className="text-[#001C44]">{filteredActivities.length}</strong> hoạt động
             </div>
 
             {loading ? (
@@ -326,13 +314,13 @@ export default function HomePage() {
                   <div
                     key={act.id}
                     className={`bg-white border rounded-xl p-5 shadow-xs space-y-3.5 transition-all ${isRejected
-                      ? 'border-rose-200 bg-rose-50/15'
-                      : isPending
-                        ? 'border-amber-200/80 hover:border-amber-300'
-                        : 'border-slate-200 hover:border-[#2D99AE]/60'
+                        ? 'border-rose-200 bg-rose-50/15'
+                        : isPending
+                          ? 'border-amber-200/80 hover:border-amber-300'
+                          : 'border-slate-200 hover:border-[#2D99AE]/60'
                       }`}
                   >
-                    {/* Hàng 1: Tiêu chuẩn, Cấp xét, Hạn đăng ký nhấp nháy & Huy hiệu trạng thái */}
+                    {/* Hàng 1: Tiêu chuẩn, Cấp xét, Hạn đăng ký & Badge */}
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0C5776] text-white">
@@ -350,7 +338,6 @@ export default function HomePage() {
                           ))}
                         </div>
 
-                        {/* HUY HIỆU HẠN ĐĂNG KÝ CÓ CHẤM NHẤP NHÁY (ANIMATE-PING & ANIMATE-PULSE) */}
                         {deadlineInfo && (
                           <div>
                             {deadlineInfo.isExpired ? (
@@ -380,7 +367,6 @@ export default function HomePage() {
                         )}
                       </div>
 
-                      {/* Badge trạng thái công nhận */}
                       <div>
                         {isApproved ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
@@ -417,7 +403,7 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    {/* Hàng 3: Chi tiết thông tin (bao gồm Hạn đăng ký) */}
+                    {/* Hàng 3: Chi tiết thông tin */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Building2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
@@ -456,7 +442,7 @@ export default function HomePage() {
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-xs text-[#0C5776] hover:text-[#001C44] font-semibold underline"
                         >
-                          Xem chi tiết đề án/ bài viết
+                          Xem chi tiết đề án / bài viết
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       ) : (
