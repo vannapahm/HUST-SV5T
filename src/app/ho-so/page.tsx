@@ -1026,11 +1026,10 @@ export default function StudentPortfolioPage() {
                                             Tự động tính theo trọng số tín chỉ
                                         </span>
                                     </div>
-
-                                    {/* Kỳ 2025.2 */}
+                                    {/* Kỳ 1 */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded-lg border border-slate-200">
                                         <div className="font-semibold text-xs text-[#001C44] flex items-center">
-                                            Kỳ học 2025.2:
+                                            Kỳ học {startYear}.1:
                                         </div>
                                         <div>
                                             <label className="block text-[11px] text-slate-500 mb-0.5">GPA Kỳ 1 (thang 4.0)</label>
@@ -1058,10 +1057,10 @@ export default function StudentPortfolioPage() {
                                         </div>
                                     </div>
 
-                                    {/* Kỳ 2025.2 */}
+                                    {/* Kỳ 2 */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded-lg border border-slate-200">
                                         <div className="font-semibold text-xs text-[#001C44] flex items-center">
-                                            Kỳ học 2025.2:
+                                            Kỳ học {startYear}.2:
                                         </div>
                                         <div>
                                             <label className="block text-[11px] text-slate-500 mb-0.5">GPA Kỳ 2 (thang 4.0)</label>
@@ -1092,7 +1091,7 @@ export default function StudentPortfolioPage() {
                                     {/* Điểm rèn luyện */}
                                     <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-lg border border-slate-200">
                                         <div>
-                                            <label className="block text-[11px] text-slate-500 mb-0.5">Điểm rèn luyện Kỳ 2025.1</label>
+                                            <label className="block text-[11px] text-slate-500 mb-0.5">Điểm rèn luyện Kỳ {startYear}.1</label>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -1104,7 +1103,7 @@ export default function StudentPortfolioPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[11px] text-slate-500 mb-0.5">Điểm rèn luyện Kỳ 2025.2</label>
+                                            <label className="block text-[11px] text-slate-500 mb-0.5">Điểm rèn luyện Kỳ {startYear}.2</label>
                                             <input
                                                 type="number"
                                                 min="0"
