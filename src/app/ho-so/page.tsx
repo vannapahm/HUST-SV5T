@@ -197,12 +197,13 @@ export default function StudentPortfolioPage() {
         if (data) setSystemActivities(data);
     };
 
-    const fetchRecords = async (mssv: string) => {
+    const fetchRecords = async (mssv: string, year: string = academicYear) => {
         setLoadingRecords(true);
         const { data, error } = await supabase
             .from('student_activities')
             .select('*')
             .eq('student_id', mssv.trim())
+            .eq('academic_year', year)
             .order('participation_date', { ascending: false });
 
         if (!error && data) {
@@ -211,11 +212,12 @@ export default function StudentPortfolioPage() {
         setLoadingRecords(false);
     };
 
-    const fetchAcademicInfo = async (mssv: string) => {
+    const fetchAcademicInfo = async (mssv: string, year: string = academicYear) => {
         const { data } = await supabase
             .from('student_academic_info')
             .select('*')
             .eq('student_id', mssv.trim())
+            .eq('academic_year', year)
             .maybeSingle();
 
         if (data) {
@@ -224,10 +226,25 @@ export default function StudentPortfolioPage() {
             setAcademicData((prev) => ({
                 ...prev,
                 student_id: mssv,
-                email_sis: ''
+                email_sis: '',
+                drl_sem1: '',
+                drl_sem2: '',
+                gpa_sem1: '',
+                credits_sem1: '',
+                gpa_sem2: '',
+                credits_sem2: '',
+                other_achievements: ''
             }));
         }
     };
+
+    // Tự động tải lại hoạt động và điểm tương ứng khi sinh viên đổi năm học
+    useEffect(() => {
+        if (isLoggedIn && currentMssv) {
+            fetchRecords(currentMssv, academicYear);
+            fetchAcademicInfo(currentMssv, academicYear);
+        }
+    }, [academicYear]);
 
     const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
