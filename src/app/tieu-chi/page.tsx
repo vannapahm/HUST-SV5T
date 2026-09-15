@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
     ArrowLeft, Search, CheckCircle2, Circle, Award, BookOpen,
-    HeartHandshake, Activity, Globe, Filter, RotateCcw, Sparkles
+    HeartHandshake, Activity, Globe, Filter, RotateCcw, Sparkles, Star, Info
 } from 'lucide-react';
 import { HANDBOOK_CRITERIA } from '@/data/handbookCriteria';
 
@@ -84,14 +84,11 @@ export default function CriteriaGuidePage() {
     return (
         <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
             <div>
-                {/* Header */}
+                {/* Header chuẩn chỉnh, không bị dính dòng */}
                 <header className="bg-[#001C44] text-white border-b border-[#0C5776] shadow-sm">
                     <div className="max-w-5xl mx-auto px-4 py-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
-
-                            {/* KHỐI TIÊU ĐỀ: Bọc riêng từng dòng để không bao giờ bị dính vào nhau */}
                             <div className="space-y-1.5">
-                                {/* Dòng 1: Nút về trang chủ */}
                                 <div>
                                     <Link
                                         href="/"
@@ -101,26 +98,19 @@ export default function CriteriaGuidePage() {
                                         Về Trang chủ
                                     </Link>
                                 </div>
-
-                                {/* Dòng 2: Huy hiệu ĐẠI HỌC BÁCH KHOA HÀ NỘI */}
                                 <div>
                                     <span className="inline-block text-[11px] font-semibold uppercase tracking-wider text-[#BCFEFE] bg-[#0C5776]/60 px-2.5 py-0.5 rounded border border-[#2D99AE]/40">
                                         ĐẠI HỌC BÁCH KHOA HÀ NỘI
                                     </span>
                                 </div>
-
-                                {/* Dòng 3: Tiêu đề chính */}
                                 <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight pt-0.5">
                                     Bộ tiêu chuẩn xét chọn danh hiệu “Sinh viên 5 tốt”
                                 </h1>
-
-                                {/* Dòng 4: Mô tả các cấp */}
                                 <p className="text-xs text-[#BCFEFE]/80">
                                     Cấp Đại học năm học 2025 - 2026 • Cấp Thành phố • Cấp Trung ương
                                 </p>
                             </div>
 
-                            {/* Khối thống kê hồ sơ tự rà soát bên phải */}
                             <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl p-3.5 flex items-center gap-4 text-xs">
                                 <div>
                                     <div className="text-[#BCFEFE] font-medium">Hồ sơ tự rà soát</div>
@@ -138,7 +128,6 @@ export default function CriteriaGuidePage() {
                                     </button>
                                 )}
                             </div>
-
                         </div>
                     </div>
                 </header>
@@ -150,7 +139,7 @@ export default function CriteriaGuidePage() {
                             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                             <input
                                 type="text"
-                                placeholder="Tra cứu tiêu chí (VD: điểm rèn luyện, GPA, nghiên cứu khoa học, hiến máu...)"
+                                placeholder="Tra cứu tiêu chí (VD: điểm rèn luyện, GPA, nghiên cứu khoa học, GDTC, hiến máu...)"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
@@ -166,7 +155,9 @@ export default function CriteriaGuidePage() {
                                 <button
                                     key={lvl.key}
                                     onClick={() => setSelectedLevel(lvl.key)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedLevel === lvl.key ? 'bg-[#001C44] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedLevel === lvl.key
+                                            ? 'bg-[#001C44] text-white shadow-xs'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
                                     {lvl.label}
@@ -179,7 +170,9 @@ export default function CriteriaGuidePage() {
                             <span className="text-xs font-semibold text-slate-500 mr-1">Tiêu chuẩn:</span>
                             <button
                                 onClick={() => setSelectedStandard('ALL')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStandard === 'ALL' ? 'bg-[#0C5776] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStandard === 'ALL'
+                                        ? 'bg-[#0C5776] text-white shadow-xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                             >
                                 Tất cả (5 tiêu chuẩn)
@@ -188,7 +181,9 @@ export default function CriteriaGuidePage() {
                                 <button
                                     key={key}
                                     onClick={() => setSelectedStandard(key)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStandard === key ? 'bg-[#001C44] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStandard === key
+                                            ? 'bg-[#001C44] text-white shadow-xs'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
                                     <span>{config.label}</span>
@@ -197,7 +192,7 @@ export default function CriteriaGuidePage() {
                         </div>
                     </div>
 
-                    {/* ===================== VISUAL 2 Ô CHUẨN XÁC THEO MẪU ===================== */}
+                    {/* Danh sách tiêu chuẩn dạng Infographic 2-3 khối */}
                     <div className="space-y-12">
                         {standardsToDisplay.map((stdKey) => {
                             const standard = HANDBOOK_CRITERIA[stdKey];
@@ -206,14 +201,19 @@ export default function CriteriaGuidePage() {
                             const filterFn = (fullText: string) => {
                                 const levels = getLevelsOfCriterion(fullText);
                                 const matchLevel = selectedLevel === 'ALL' || levels.includes(selectedLevel);
-                                const matchSearch = searchQuery.trim() === '' || fullText.toLowerCase().includes(searchQuery.toLowerCase().trim());
+                                const matchSearch =
+                                    searchQuery.trim() === '' ||
+                                    fullText.toLowerCase().includes(searchQuery.toLowerCase().trim());
                                 return matchLevel && matchSearch;
                             };
 
                             const mandatoryList = standard.mandatory.filter(filterFn);
-                            const electiveList = standard.elective.filter(filterFn);
+                            const electiveList = standard.elective ? standard.elective.filter(filterFn) : [];
+                            const priorityList = standard.priority ? standard.priority.filter(filterFn) : [];
 
-                            if (mandatoryList.length === 0 && electiveList.length === 0) return null;
+                            if (mandatoryList.length === 0 && electiveList.length === 0 && priorityList.length === 0) {
+                                return null;
+                            }
 
                             return (
                                 <div key={stdKey} className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
@@ -225,7 +225,7 @@ export default function CriteriaGuidePage() {
                                         <div className="w-12 h-1 bg-[#0C5776] mx-auto rounded-full mt-2"></div>
                                     </div>
 
-                                    {/* KHỐI 1: TIÊU CHÍ BẮT BUỘC (Nền đậm, chữ trắng) */}
+                                    {/* ================= KHỐI 1: TIÊU CHÍ BẮT BUỘC ================= */}
                                     {mandatoryList.length > 0 && (
                                         <div className="space-y-3">
                                             <h3 className="text-sm sm:text-base font-black tracking-wide text-[#001C44] uppercase">
@@ -238,11 +238,60 @@ export default function CriteriaGuidePage() {
                                                         <div
                                                             key={idx}
                                                             onClick={() => toggleCriterion(fullText)}
-                                                            className={`cursor-pointer rounded-2xl p-4 sm:p-5 text-white transition-all shadow-md flex items-start gap-3.5 ${isChecked ? 'bg-emerald-800 border-2 border-emerald-400' : 'bg-[#001C44] hover:bg-[#0C5776]'
+                                                            className={`cursor-pointer rounded-2xl p-4 sm:p-5 text-white transition-all shadow-md flex items-start gap-3.5 ${isChecked
+                                                                    ? 'bg-emerald-800 border-2 border-emerald-400'
+                                                                    : 'bg-[#001C44] hover:bg-[#0C5776]'
                                                                 }`}
                                                         >
                                                             <div className="mt-0.5 shrink-0">
-                                                                {isChecked ? <CheckCircle2 className="w-5 h-5 text-[#BCFEFE] fill-emerald-600" /> : <Circle className="w-5 h-5 text-white/50" />}
+                                                                {isChecked ? (
+                                                                    <CheckCircle2 className="w-5 h-5 text-[#BCFEFE] fill-emerald-600" />
+                                                                ) : (
+                                                                    <Circle className="w-5 h-5 text-white/50" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 text-xs sm:text-sm font-medium leading-relaxed whitespace-pre-line">
+                                                                {fullText}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Ghi chú hoặc ví dụ đi kèm */}
+                                            {standard.note && (
+                                                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 italic leading-relaxed flex items-start gap-2">
+                                                    <Info className="w-4 h-4 text-[#0C5776] shrink-0 mt-0.5" />
+                                                    <span>{standard.note}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ================= KHỐI 2: ĐẠT THÊM 01 TIÊU CHÍ ================= */}
+                                    {electiveList.length > 0 && (
+                                        <div className="space-y-3 pt-3">
+                                            <h3 className="text-sm sm:text-base font-black tracking-wide text-[#001C44] uppercase">
+                                                ĐẠT THÊM 01 TIÊU CHÍ TRONG CÁC TIÊU CHÍ SAU:
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {electiveList.map((fullText, idx) => {
+                                                    const isChecked = !!checkedItems[fullText];
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => toggleCriterion(fullText)}
+                                                            className={`cursor-pointer rounded-2xl p-4 sm:p-5 transition-all shadow-xs flex items-start gap-3.5 border-2 ${isChecked
+                                                                    ? 'bg-emerald-50 border-emerald-500 text-emerald-950'
+                                                                    : 'bg-white border-[#001C44] text-slate-800 hover:bg-slate-50'
+                                                                }`}
+                                                        >
+                                                            <div className="mt-0.5 shrink-0">
+                                                                {isChecked ? (
+                                                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100" />
+                                                                ) : (
+                                                                    <Circle className="w-5 h-5 text-[#001C44]" />
+                                                                )}
                                                             </div>
                                                             <div className="flex-1 text-xs sm:text-sm font-medium leading-relaxed">
                                                                 {fullText}
@@ -254,26 +303,33 @@ export default function CriteriaGuidePage() {
                                         </div>
                                     )}
 
-                                    {/* KHỐI 2: ĐẠT THÊM 01 TIÊU CHÍ (Nền trắng, viền đậm, chữ tối) */}
-                                    {electiveList.length > 0 && (
-                                        <div className="space-y-3 pt-4">
-                                            <h3 className="text-sm sm:text-base font-black tracking-wide text-[#001C44] uppercase">
-                                                ĐẠT THÊM 01 TIÊU CHÍ TRONG CÁC TIÊU CHÍ SAU:
+                                    {/* ================= KHỐI 3: TIÊU CHÍ ƯU TIÊN ================= */}
+                                    {priorityList.length > 0 && (
+                                        <div className="space-y-3 pt-3">
+                                            <h3 className="text-sm sm:text-base font-black tracking-wide text-emerald-700 uppercase flex items-center gap-1.5">
+                                                <Star className="w-4 h-4 fill-emerald-600 text-emerald-600" />
+                                                <span>TIÊU CHÍ ƯU TIÊN:</span>
                                             </h3>
                                             <div className="space-y-3">
-                                                {electiveList.map((fullText, idx) => {
+                                                {priorityList.map((fullText, idx) => {
                                                     const isChecked = !!checkedItems[fullText];
                                                     return (
                                                         <div
                                                             key={idx}
                                                             onClick={() => toggleCriterion(fullText)}
-                                                            className={`cursor-pointer rounded-2xl p-4 sm:p-5 transition-all shadow-xs flex items-start gap-3.5 border-2 ${isChecked ? 'bg-emerald-50 border-emerald-500 text-emerald-950' : 'bg-white border-[#001C44] text-slate-800 hover:bg-slate-50'
+                                                            className={`cursor-pointer rounded-2xl p-4 sm:p-5 transition-all shadow-xs flex items-start gap-3.5 border-2 ${isChecked
+                                                                    ? 'bg-emerald-100 border-emerald-600 text-emerald-950'
+                                                                    : 'bg-emerald-50/40 border-emerald-600 text-emerald-950 hover:bg-emerald-50'
                                                                 }`}
                                                         >
                                                             <div className="mt-0.5 shrink-0">
-                                                                {isChecked ? <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100" /> : <Circle className="w-5 h-5 text-[#001C44]" />}
+                                                                {isChecked ? (
+                                                                    <CheckCircle2 className="w-5 h-5 text-emerald-700 fill-emerald-200" />
+                                                                ) : (
+                                                                    <Circle className="w-5 h-5 text-emerald-700" />
+                                                                )}
                                                             </div>
-                                                            <div className="flex-1 text-xs sm:text-sm font-medium leading-relaxed">
+                                                            <div className="flex-1 text-xs sm:text-sm font-semibold leading-relaxed">
                                                                 {fullText}
                                                             </div>
                                                         </div>
