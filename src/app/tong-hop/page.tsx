@@ -572,7 +572,7 @@ export default function SummaryPage() {
                                 Về Trang chủ
                             </Link>
                             <h1 className="text-xl sm:text-2xl font-bold mt-2">
-                                Bàn làm việc Quản trị viên
+                                Trang Quản trị
                             </h1>
                         </div>
                     </header>
@@ -609,7 +609,7 @@ export default function SummaryPage() {
                                     type="submit"
                                     className="w-full py-3 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                                 >
-                                    <span>Mở khóa bàn làm việc</span>
+                                    <span>Xác thực truy cập</span>
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </form>
@@ -647,7 +647,7 @@ export default function SummaryPage() {
                                     Về Trang chủ
                                 </Link>
                                 <h1 className="text-xl sm:text-2xl font-bold">
-                                    Bàn làm việc Quản trị viên
+                                    Trang Quản trị
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
                                     Quản trị: Phê duyệt, điều chỉnh trạng thái và quản lý hồ sơ sinh viên toàn hệ thống.
@@ -691,8 +691,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('ACTIVITIES')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ACTIVITIES'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <Globe className="w-4 h-4 text-[#0C5776]" />
@@ -705,8 +705,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('PROPOSALS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'PROPOSALS'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             Đề xuất từ sinh viên
@@ -718,8 +718,8 @@ export default function SummaryPage() {
                         <button
                             onClick={() => setActiveTab('STUDENTS')}
                             className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'STUDENTS'
-                                    ? 'border-[#0C5776] text-[#001C44]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                ? 'border-[#0C5776] text-[#001C44]'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
                         >
                             <User className="w-4 h-4 text-[#0C5776]" />
@@ -795,10 +795,10 @@ export default function SummaryPage() {
                                         <div
                                             key={act.id}
                                             className={`bg-white border rounded-xl p-5 shadow-xs space-y-3 transition-all ${currentStatus === 'REJECTED'
-                                                    ? 'border-rose-200 bg-rose-50/15'
-                                                    : currentStatus === 'PENDING'
-                                                        ? 'border-amber-200 bg-amber-50/15'
-                                                        : 'border-slate-200 hover:border-[#2D99AE]/60'
+                                                ? 'border-rose-200 bg-rose-50/15'
+                                                : currentStatus === 'PENDING'
+                                                    ? 'border-amber-200 bg-amber-50/15'
+                                                    : 'border-slate-200 hover:border-[#2D99AE]/60'
                                                 }`}
                                         >
                                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -1160,8 +1160,8 @@ export default function SummaryPage() {
                                                             </span>
                                                             <span className="text-slate-400">{act.participation_date}</span>
                                                             <span className={`font-bold px-2 py-0.5 rounded text-[11px] border ${act.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                                                                    act.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                                                                        'bg-rose-50 text-rose-700 border-rose-300'
+                                                                act.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                                                                    'bg-rose-50 text-rose-700 border-rose-300'
                                                                 }`}>
                                                                 {act.status === 'APPROVED' ? '✓ Đã công nhận' : act.status === 'PENDING' ? '⏳ Chờ xét' : '✕ Bị loại'}
                                                             </span>
