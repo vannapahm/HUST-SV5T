@@ -658,19 +658,6 @@ export default function StudentPortfolioPage() {
                                 <span className="text-xs text-slate-500">Tiêu chí được công nhận:</span>
                                 <div className="text-lg font-bold text-[#0C5776]">{totalApproved} tiêu chí</div>
                             </div>
-
-                            <div className="flex items-center gap-4 text-right">
-                                <div>
-                                    <span className="text-xs text-slate-500">Hợp lệ tính điểm:</span>
-                                    <div className="text-lg font-bold text-[#0C5776]">{totalApproved} tiêu chí</div>
-                                </div>
-                                <button
-                                    onClick={handleLogout}
-                                    className="text-xs text-slate-400 hover:text-rose-600 underline"
-                                >
-                                    Đăng xuất
-                                </button>
-                            </div>
                         </div>
 
                         {/* Thống kê 5 tiêu chuẩn */}
