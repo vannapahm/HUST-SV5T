@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     ArrowLeft, PlusCircle, Trash2, Calendar, Award,
     ExternalLink, User, Sparkles, X, LogOut, ArrowRight,
-    CheckCircle2, Clock, AlertCircle, Lock, KeyRound
+    CheckCircle2, Clock, AlertCircle, Lock, KeyRound, ShieldCheck
 } from 'lucide-react';
 import { CRITERIA_TREE } from '@/data/criteria';
 
@@ -43,25 +43,28 @@ const CRITERIA_MAP: Record<string, string> = {
 };
 
 export default function StudentPortfolioPage() {
-    const [authStep, setAuthStep] = useState<'INPUT_MSSV' | 'SET_PIN' | 'ENTER_PIN' | 'AUTHENTICATED'>('INPUT_MSSV');
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+    const [loadingAuth, setLoadingAuth] = useState<boolean>(true);
 
+    // Form đăng nhập
     const [mssvInput, setMssvInput] = useState('');
+    const [pinInput, setPinInput] = useState('');
+    const [rememberMe, setRememberMe] = useState(true);
+    const [submittingAuth, setSubmittingAuth] = useState(false);
+    const [authError, setAuthError] = useState('');
+
+    // Dữ liệu sinh viên
     const [currentMssv, setCurrentMssv] = useState<string>('');
     const [savedPin, setSavedPin] = useState<string>('');
 
-    // Form nhập / tạo PIN
-    const [pinInput, setPinInput] = useState('');
-    const [pinConfirm, setPinConfirm] = useState('');
-    const [pinError, setPinError] = useState('');
-
-    // Modal đổi PIN
+    // Modal đổi mật khẩu
     const [isChangePinOpen, setIsChangePinOpen] = useState(false);
     const [oldPinInput, setOldPinInput] = useState('');
     const [newPinInput, setNewPinInput] = useState('');
 
-    // Dữ liệu hồ sơ
+    // Dữ liệu hoạt động
     const [records, setRecords] = useState<StudentRecord[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loadingRecords, setLoadingRecords] = useState(false);
     const [systemActivities, setSystemActivities] = useState<OfficialActivity[]>([]);
 
     // Modal thêm hoạt động
@@ -80,7 +83,37 @@ export default function StudentPortfolioPage() {
 
     useEffect(() => {
         fetchSystemActivities();
+        checkAutoLogin();
     }, []);
+
+    const checkAutoLogin = async () => {
+        try {
+            const savedSession = localStorage.getItem('sv5t_student_session');
+            if (savedSession) {
+                const { mssv, pin } = JSON.parse(savedSession);
+                if (mssv && pin) {
+                    const { data } = await supabase
+                        .from('student_profiles')
+                        .select('pin_code')
+                        .eq('student_id', mssv)
+                        .maybeSingle();
+
+                    if (data && data.pin_code === pin) {
+                        setCurrentMssv(mssv);
+                        setSavedPin(pin);
+                        setIsLoggedIn(true);
+                        fetchRecords(mssv);
+                    } else {
+                        localStorage.removeItem('sv5t_student_session');
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingAuth(false);
+        }
+    };
 
     const fetchSystemActivities = async () => {
         const { data } = await supabase
@@ -91,7 +124,7 @@ export default function StudentPortfolioPage() {
     };
 
     const fetchRecords = async (mssv: string) => {
-        setLoading(true);
+        setLoadingRecords(true);
         const { data, error } = await supabase
             .from('student_activities')
             .select('*')
@@ -101,22 +134,25 @@ export default function StudentPortfolioPage() {
         if (!error && data) {
             setRecords(data as StudentRecord[]);
         }
-        setLoading(false);
+        setLoadingRecords(false);
     };
 
-    // KIỂM TRA MSSV ĐÃ THIẾT LẬP MÃ PIN CHƯA
-    const handleCheckMssv = async (e: React.FormEvent) => {
+    const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const cleanMssv = mssvInput.trim();
+        const cleanPin = pinInput.trim();
+        setAuthError('');
+
         if (!cleanMssv) {
-            alert('Vui lòng nhập Mã số sinh viên (MSSV)!');
+            setAuthError('Vui lòng nhập MSSV!');
+            return;
+        }
+        if (!/^\d{6}$/.test(cleanPin)) {
+            setAuthError('Mật khẩu phải bao gồm đúng 6 chữ số!');
             return;
         }
 
-        setPinError('');
-        setPinInput('');
-        setPinConfirm('');
-        setCurrentMssv(cleanMssv);
+        setSubmittingAuth(true);
 
         const { data, error } = await supabase
             .from('student_profiles')
@@ -124,67 +160,70 @@ export default function StudentPortfolioPage() {
             .eq('student_id', cleanMssv)
             .maybeSingle();
 
+        setSubmittingAuth(false);
+
         if (error) {
-            alert('Lỗi kết nối cơ sở dữ liệu: ' + error.message);
+            setAuthError('Lỗi kết nối cơ sở dữ liệu: ' + error.message);
             return;
         }
 
-        if (data && data.pin_code) {
-            setSavedPin(data.pin_code);
-            setAuthStep('ENTER_PIN');
+        if (!data) {
+            const confirmCreate = confirm(
+                `MSSV "${cleanMssv}" chưa kích hoạt hồ sơ trên hệ thống.\n\nBạn có muốn khởi tạo hồ sơ mới với mật khẩu này không?`
+            );
+            if (!confirmCreate) return;
+
+            const { error: insertErr } = await supabase
+                .from('student_profiles')
+                .insert([{ student_id: cleanMssv, pin_code: cleanPin }]);
+
+            if (insertErr) {
+                setAuthError('Không thể tạo hồ sơ: ' + insertErr.message);
+                return;
+            }
+
+            loginSuccess(cleanMssv, cleanPin);
+            alert('Khởi tạo hồ sơ thành công! Hãy ghi nhớ mật khẩu 6 số này cho các lần truy cập tiếp theo.');
         } else {
-            setAuthStep('SET_PIN');
+            if (data.pin_code !== cleanPin) {
+                setAuthError('Mật khẩu không chính xác! Nếu quên mật khẩu, vui lòng liên hệ Quản trị viên để được đặt lại.');
+                return;
+            }
+            loginSuccess(cleanMssv, cleanPin);
         }
     };
 
-    // TẠO MÃ PIN 6 SỐ LẦN ĐẦU
-    const handleCreatePin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!/^\d{6}$/.test(pinInput)) {
-            setPinError('Mã PIN phải bao gồm đúng 6 chữ số!');
-            return;
+    const loginSuccess = (mssv: string, pin: string) => {
+        if (rememberMe) {
+            localStorage.setItem('sv5t_student_session', JSON.stringify({ mssv, pin }));
+        } else {
+            localStorage.removeItem('sv5t_student_session');
         }
-        if (pinInput !== pinConfirm) {
-            setPinError('Mã PIN xác nhận không trùng khớp!');
-            return;
-        }
-
-        const { error } = await supabase
-            .from('student_profiles')
-            .insert([{ student_id: currentMssv, pin_code: pinInput }]);
-
-        if (error) {
-            alert('Không thể tạo mã PIN: ' + error.message);
-            return;
-        }
-
-        setSavedPin(pinInput);
-        setAuthStep('AUTHENTICATED');
-        fetchRecords(currentMssv);
-        alert('Tạo mã PIN thành công! Hãy ghi nhớ mã PIN 6 số này cho các lần tra cứu sau.');
+        setCurrentMssv(mssv);
+        setSavedPin(pin);
+        setIsLoggedIn(true);
+        fetchRecords(mssv);
     };
 
-    // XÁC MINH MÃ PIN
-    const handleVerifyPin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (pinInput !== savedPin) {
-            setPinError('Mã PIN không chính xác! Nếu quên mã, vui lòng liên hệ Ban Thư ký để được đặt lại.');
-            return;
-        }
-
-        setAuthStep('AUTHENTICATED');
-        fetchRecords(currentMssv);
+    const handleLogout = () => {
+        localStorage.removeItem('sv5t_student_session');
+        setIsLoggedIn(false);
+        setCurrentMssv('');
+        setMssvInput('');
+        setPinInput('');
+        setSavedPin('');
+        setRecords([]);
+        setAuthError('');
     };
 
-    // ĐỔI MÃ PIN
     const handleChangePin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (oldPinInput !== savedPin) {
-            alert('Mã PIN cũ không chính xác!');
+            alert('Mật khẩu hiện tại không đúng!');
             return;
         }
         if (!/^\d{6}$/.test(newPinInput)) {
-            alert('Mã PIN mới phải bao gồm đúng 6 chữ số!');
+            alert('Mật khẩu mới phải bao gồm đúng 6 chữ số!');
             return;
         }
 
@@ -194,29 +233,20 @@ export default function StudentPortfolioPage() {
             .eq('student_id', currentMssv);
 
         if (error) {
-            alert('Không thể đổi mã PIN: ' + error.message);
+            alert('Không thể đổi mật khẩu: ' + error.message);
             return;
         }
 
         setSavedPin(newPinInput);
+        if (localStorage.getItem('sv5t_student_session')) {
+            localStorage.setItem('sv5t_student_session', JSON.stringify({ mssv: currentMssv, pin: newPinInput }));
+        }
         setIsChangePinOpen(false);
         setOldPinInput('');
         setNewPinInput('');
-        alert('Đổi mã PIN thành công!');
+        alert('Đổi mật khẩu thành công!');
     };
 
-    // ĐĂNG XUẤT
-    const handleLogout = () => {
-        setAuthStep('INPUT_MSSV');
-        setCurrentMssv('');
-        setMssvInput('');
-        setPinInput('');
-        setPinConfirm('');
-        setSavedPin('');
-        setRecords([]);
-    };
-
-    // THÊM HOẠT ĐỘNG
     const handleAddActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentMssv) return;
@@ -235,7 +265,7 @@ export default function StudentPortfolioPage() {
                 activity_title: act.title,
                 organizer: act.organizer,
                 target_standard: act.supported_standard,
-                criteria_detail: act.criteria_detail || 'Tham gia hoạt động được BTK công nhận',
+                criteria_detail: act.criteria_detail || 'Tham gia hoạt động được công nhận',
                 participation_date: act.start_date ? act.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
                 proof_url: '',
                 status: act.status || 'APPROVED',
@@ -278,7 +308,6 @@ export default function StudentPortfolioPage() {
         }
     };
 
-    // XÓA HOẠT ĐỘNG
     const handleDeleteRecord = async (id: number, title: string) => {
         if (!confirm(`Bạn có chắc muốn xóa hoạt động:\n"${title}"\nkhỏi hồ sơ tích lũy của mình?`)) return;
 
@@ -300,6 +329,14 @@ export default function StudentPortfolioPage() {
 
     const totalApproved = records.filter((r) => r.status === 'APPROVED').length;
 
+    if (loadingAuth) {
+        return (
+            <main className="min-h-screen bg-[#f8fafc] flex items-center justify-center text-slate-500 text-xs">
+                Đang kiểm tra hồ sơ đăng nhập...
+            </main>
+        );
+    }
+
     return (
         <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
             <div>
@@ -317,14 +354,14 @@ export default function StudentPortfolioPage() {
                                 </Link>
                                 <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
                                     <Sparkles className="w-6 h-6 text-[#BCFEFE]" />
-                                    Hồ sơ tích lũy Sinh viên 5 tốt
+                                    Hồ sơ cá nhân Sinh viên 5 tốt
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Theo dõi tiến độ, số lượng tiêu chí đạt chuẩn và lưu trữ minh chứng cá nhân.
+                                    Theo dõi tiến độ, số lượng tiêu chí đạt chuẩn và lưu trữ minh chứng rèn luyện.
                                 </p>
                             </div>
 
-                            {authStep === 'AUTHENTICATED' && (
+                            {isLoggedIn && (
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => setIsModalOpen(true)}
@@ -335,11 +372,11 @@ export default function StudentPortfolioPage() {
                                     </button>
                                     <button
                                         onClick={() => setIsChangePinOpen(true)}
-                                        title="Đổi mã PIN bảo mật"
+                                        title="Đổi mật khẩu bảo mật"
                                         className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-medium text-white transition-colors"
                                     >
                                         <KeyRound className="w-3.5 h-3.5 text-[#BCFEFE]" />
-                                        <span>Đổi PIN</span>
+                                        <span>Đổi mật khẩu</span>
                                     </button>
                                     <button
                                         onClick={handleLogout}
@@ -355,166 +392,96 @@ export default function StudentPortfolioPage() {
                     </div>
                 </header>
 
-                {/* ==================== MÀN HÌNH 1: NHẬP MSSV ==================== */}
-                {authStep === 'INPUT_MSSV' && (
+                {/* ==================== MÀN HÌNH ĐĂNG NHẬP 1 BƯỚC ==================== */}
+                {!isLoggedIn && (
                     <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-150">
-                        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-6">
-                            <div className="w-16 h-16 bg-[#BCFEFE]/20 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-5">
+                            <div className="w-16 h-16 bg-[#0C5776]/10 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
                                 <User className="w-8 h-8" />
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold text-[#001C44]">Cổng tra cứu hồ sơ sinh viên</h2>
+                                <h2 className="text-lg font-bold text-[#001C44]">Đăng nhập hồ sơ cá nhân</h2>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Nhập Mã số sinh viên (MSSV) của bạn để truy cập hồ sơ tích lũy.
+                                    Nhập MSSV và Mật khẩu để quản lý hồ sơ tích lũy Sinh viên 5 tốt.
                                 </p>
                             </div>
 
-                            <form onSubmit={handleCheckMssv} className="space-y-4">
-                                <input
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    placeholder="Nhập MSSV (VD: 20211234)..."
-                                    value={mssvInput}
-                                    onChange={(e) => setMssvInput(e.target.value)}
-                                    className="w-full px-4 py-3 text-sm text-center font-bold tracking-wider border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white"
-                                />
+                            <form onSubmit={handleLoginSubmit} className="space-y-3.5 text-left">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Mã số sinh viên (MSSV) *
+                                    </label>
+                                    <div className="relative">
+                                        <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            required
+                                            autoFocus
+                                            placeholder="VD: 20211234..."
+                                            value={mssvInput}
+                                            onChange={(e) => setMssvInput(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Mật khẩu (6 chữ số) *
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="password"
+                                            required
+                                            maxLength={6}
+                                            placeholder="••••••"
+                                            value={pinInput}
+                                            onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
+                                            className="w-full pl-10 pr-4 py-2.5 text-xs font-bold tracking-widest border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1 text-xs">
+                                    <label className="inline-flex items-center gap-2 cursor-pointer text-slate-600 select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
+                                            className="rounded border-slate-300 text-[#0C5776] focus:ring-0 w-3.5 h-3.5"
+                                        />
+                                        <span>Ghi nhớ đăng nhập trên máy này</span>
+                                    </label>
+                                </div>
+
+                                {authError && (
+                                    <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs text-center font-medium leading-relaxed">
+                                        {authError}
+                                    </div>
+                                )}
 
                                 <button
                                     type="submit"
-                                    className="w-full py-3 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                                    disabled={submittingAuth}
+                                    className="w-full py-3 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
                                 >
-                                    <span>Tiếp tục</span>
+                                    <span>{submittingAuth ? 'Đang kiểm tra...' : 'Đăng nhập vào hồ sơ'}</span>
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </form>
+
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 leading-relaxed text-left">
+                                💡 <strong>Lưu ý:</strong> Nếu bạn lần đầu truy cập, hãy nhập MSSV và tự chọn một mật khẩu 6 số bất kỳ để kích hoạt hồ sơ.
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* ==================== MÀN HÌNH 2A: THIẾT LẬP MÃ PIN 6 SỐ ==================== */}
-                {authStep === 'SET_PIN' && (
-                    <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-150">
-                        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-5">
-                            <div className="w-16 h-16 bg-[#0C5776]/10 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
-                                <Lock className="w-8 h-8" />
-                            </div>
-
-                            <div>
-                                <h2 className="text-lg font-bold text-[#001C44]">Thiết lập mã PIN cá nhân</h2>
-                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    MSSV: <strong className="text-[#001C44]">{currentMssv}</strong>. Vui lòng tạo mã PIN cố định gồm <strong>đúng 6 chữ số</strong> để bảo mật hồ sơ của bạn.
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleCreatePin} className="space-y-3 text-left">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Mã PIN mới (6 chữ số) *</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        maxLength={6}
-                                        autoFocus
-                                        placeholder="Nhập 6 số..."
-                                        value={pinInput}
-                                        onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
-                                        className="w-full px-4 py-2.5 text-center text-base tracking-widest font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776]"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Xác nhận lại mã PIN *</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        maxLength={6}
-                                        placeholder="Nhập lại 6 số..."
-                                        value={pinConfirm}
-                                        onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, ''))}
-                                        className="w-full px-4 py-2.5 text-center text-base tracking-widest font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776]"
-                                    />
-                                </div>
-
-                                {pinError && (
-                                    <p className="text-xs text-rose-600 font-medium text-center">{pinError}</p>
-                                )}
-
-                                <div className="pt-2 flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAuthStep('INPUT_MSSV')}
-                                        className="w-1/3 py-2.5 border border-slate-300 text-slate-600 font-medium text-xs rounded-xl hover:bg-slate-100"
-                                    >
-                                        Quay lại
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="w-2/3 py-2.5 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
-                                    >
-                                        Lưu mã PIN & Tiếp tục
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-
-                {/* ==================== MÀN HÌNH 2B: NHẬP MÃ PIN 6 SỐ ==================== */}
-                {authStep === 'ENTER_PIN' && (
-                    <div className="max-w-md mx-auto px-4 py-16 text-center animate-in fade-in zoom-in duration-150">
-                        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-5">
-                            <div className="w-16 h-16 bg-[#0C5776]/10 text-[#0C5776] rounded-2xl flex items-center justify-center mx-auto">
-                                <Lock className="w-8 h-8" />
-                            </div>
-
-                            <div>
-                                <h2 className="text-lg font-bold text-[#001C44]">Nhập mã PIN truy cập</h2>
-                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Hồ sơ MSSV: <strong className="text-[#001C44]">{currentMssv}</strong>. Nhập mã PIN 6 số của bạn để mở khóa.
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleVerifyPin} className="space-y-4">
-                                <input
-                                    type="password"
-                                    required
-                                    autoFocus
-                                    maxLength={6}
-                                    placeholder="••••••"
-                                    value={pinInput}
-                                    onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
-                                    className="w-full px-4 py-3 text-xl text-center font-bold tracking-widest border border-slate-300 rounded-xl focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white"
-                                />
-
-                                {pinError && (
-                                    <p className="text-xs text-rose-600 font-medium">{pinError}</p>
-                                )}
-
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAuthStep('INPUT_MSSV')}
-                                        className="w-1/3 py-2.5 border border-slate-300 text-slate-600 font-medium text-xs rounded-xl hover:bg-slate-100"
-                                    >
-                                        Đổi MSSV
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="w-2/3 py-2.5 bg-[#0C5776] hover:bg-[#001C44] text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
-                                    >
-                                        Mở khóa hồ sơ
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-
-                {/* ==================== MÀN HÌNH 3: HỒ SƠ TÍCH LŨY ==================== */}
-                {authStep === 'AUTHENTICATED' && (
+                {/* ==================== MÀN HÌNH HỒ SƠ TÍCH LŨY ==================== */}
+                {isLoggedIn && (
                     <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-150">
-                        {/* Thanh thông tin sinh viên (ĐÃ BỎ DÒNG "ĐÃ BẢO VỆ BẰNG MÃ PIN") */}
                         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <span className="text-xs text-slate-500">Hồ sơ cá nhân:</span>
@@ -560,7 +527,7 @@ export default function StudentPortfolioPage() {
                                 <span className="text-xs text-slate-500">{records.length} hoạt động trong hồ sơ</span>
                             </div>
 
-                            {loading ? (
+                            {loadingRecords ? (
                                 <div className="py-12 text-center text-xs text-slate-500">Đang tải hồ sơ tích lũy...</div>
                             ) : records.length === 0 ? (
                                 <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500 text-xs space-y-3">
@@ -597,12 +564,12 @@ export default function StudentPortfolioPage() {
                                                     {isRejected ? (
                                                         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-300 flex items-center gap-1">
                                                             <AlertCircle className="w-3 h-3" />
-                                                            BTK không công nhận (Không tính điểm)
+                                                            Không công nhận (Không tính điểm)
                                                         </span>
                                                     ) : isPending ? (
                                                         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
                                                             <Clock className="w-3 h-3" />
-                                                            Chờ xét duyệt cuối năm
+                                                            Chờ xét duyệt
                                                         </span>
                                                     ) : (
                                                         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-1">
@@ -630,7 +597,7 @@ export default function StudentPortfolioPage() {
 
                                                 {isRejected && (
                                                     <p className="text-[11px] text-rose-600 font-medium pt-0.5">
-                                                        * Hoạt động này không được hội đồng thông qua tiêu chí SV5T. Bạn có thể tự xóa khỏi hồ sơ bằng nút thùng rác bên cạnh.
+                                                        * Hoạt động này không được thông qua tiêu chí SV5T. Bạn có thể tự xóa khỏi hồ sơ bằng nút thùng rác bên cạnh.
                                                     </p>
                                                 )}
 
@@ -662,19 +629,19 @@ export default function StudentPortfolioPage() {
                 )}
             </div>
 
-            {/* MODAL ĐỔI MÃ PIN 6 SỐ */}
+            {/* MODAL ĐỔI MẬT KHẨU */}
             {isChangePinOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
                     <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
                         <div className="flex items-center justify-between border-b pb-3">
-                            <h3 className="text-sm font-bold text-[#001C44]">Đổi mã PIN bảo mật</h3>
+                            <h3 className="text-sm font-bold text-[#001C44]">Đổi mật khẩu bảo mật</h3>
                             <button onClick={() => setIsChangePinOpen(false)} className="text-slate-400 hover:text-slate-600">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <form onSubmit={handleChangePin} className="space-y-3 text-xs">
                             <div>
-                                <label className="block font-semibold mb-1">Mã PIN hiện tại (6 số) *</label>
+                                <label className="block font-semibold mb-1">Mật khẩu hiện tại (6 số) *</label>
                                 <input
                                     type="password"
                                     required
@@ -685,7 +652,7 @@ export default function StudentPortfolioPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block font-semibold mb-1">Mã PIN mới (đúng 6 số) *</label>
+                                <label className="block font-semibold mb-1">Mật khẩu mới (đúng 6 số) *</label>
                                 <input
                                     type="password"
                                     required
@@ -774,7 +741,7 @@ export default function StudentPortfolioPage() {
                                         ))}
                                     </select>
                                     <p className="text-[11px] text-slate-400 mt-1.5">
-                                        * Khi hoạt động trên hệ thống có cập nhật duyệt/loại từ BTK, hồ sơ của bạn sẽ tự động đồng bộ theo.
+                                        * Khi hoạt động trên hệ thống có cập nhật trạng thái duyệt, hồ sơ của bạn sẽ tự động đồng bộ theo.
                                     </p>
                                 </div>
                             ) : (
