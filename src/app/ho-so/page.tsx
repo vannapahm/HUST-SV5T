@@ -1140,7 +1140,6 @@ export default function StudentPortfolioPage() {
                                     <span>{savingAcademic ? 'Đang lưu...' : 'Lưu thông tin'}</span>
                                 </button>
                             </div>
-                            ```[cite: 2, 4]
                         </form>
                     </div>
                 </div>
