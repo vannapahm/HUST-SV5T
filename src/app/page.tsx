@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   Calendar, MapPin, Building2, Award, ExternalLink, Filter,
   Search, Sparkles, BookOpen, User, PlusCircle, CheckCircle2,
-  Clock, AlertCircle, ArrowRight, ShieldCheck
+  Clock, AlertCircle, ArrowRight, ShieldCheck, Timer
 } from 'lucide-react';
 
 interface Activity {
@@ -59,7 +59,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchActivities();
 
-    // Tự động tải lại khi kết nối mạng phục hồi
+    // Tự động tải lại khi mạng phục hồi hoặc quay lại tab
     const handleOnline = () => fetchActivities();
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') fetchActivities();
@@ -68,7 +68,7 @@ export default function HomePage() {
     window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Lắng nghe thay đổi tức thì từ Supabase
+    // Supabase Realtime cập nhật tức thì
     const channel = supabase
       .channel('realtime_activities_home')
       .on(
@@ -97,6 +97,39 @@ export default function HomePage() {
     return dateStr;
   };
 
+  // Hàm tính toán tình trạng hạn đăng ký & nhấp nháy cảnh báo
+  const getDeadlineInfo = (deadlineStr?: string) => {
+    if (!deadlineStr) return null;
+    const deadline = new Date(deadlineStr);
+    if (isNaN(deadline.getTime())) return null;
+
+    const now = new Date();
+    const diffTime = deadline.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffTime < 0) {
+      return {
+        text: `Đã hết hạn đăng ký (${formatDateVN(deadlineStr)})`,
+        isExpired: true,
+        isUrgent: false,
+      };
+    }
+
+    if (diffDays <= 3) {
+      return {
+        text: `Sắp hết hạn: còn ${diffDays === 0 ? 'hôm nay' : `${diffDays} ngày`} (${formatDateVN(deadlineStr)})`,
+        isExpired: false,
+        isUrgent: true, // Cảnh báo đỏ nhấp nháy
+      };
+    }
+
+    return {
+      text: `Hạn đăng ký: ${formatDateVN(deadlineStr)} (còn ${diffDays} ngày)`,
+      isExpired: false,
+      isUrgent: false,
+    };
+  };
+
   // Lọc danh sách hoạt động
   const filteredActivities = useMemo(() => {
     return activities.filter((act) => {
@@ -114,7 +147,6 @@ export default function HomePage() {
     });
   }, [activities, selectedStandard, selectedStatus, searchQuery]);
 
-  // Thống kê số lượng
   const approvedCount = activities.filter((a) => (a.status || 'APPROVED') === 'APPROVED').length;
   const pendingCount = activities.filter((a) => a.status === 'PENDING').length;
 
@@ -197,7 +229,6 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-4 mt-5 space-y-5">
           {/* Bảng điều khiển tra cứu & Bộ lọc */}
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
-            {/* Thanh tìm kiếm */}
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -246,7 +277,6 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* Dropdown 5 tiêu chuẩn */}
               <div className="flex items-center gap-1.5 text-xs text-slate-600">
                 <span className="font-semibold text-slate-500">Tiêu chuẩn:</span>
                 <select
@@ -290,6 +320,7 @@ export default function HomePage() {
                 const isApproved = (act.status || 'APPROVED') === 'APPROVED';
                 const isPending = act.status === 'PENDING';
                 const isRejected = act.status === 'REJECTED';
+                const deadlineInfo = getDeadlineInfo(act.registration_deadline);
 
                 return (
                   <div
@@ -301,7 +332,7 @@ export default function HomePage() {
                           : 'border-slate-200 hover:border-[#2D99AE]/60'
                       }`}
                   >
-                    {/* Hàng 1: Tiêu chuẩn, Cấp xét & Huy hiệu Trạng thái */}
+                    {/* Hàng 1: Tiêu chuẩn, Cấp xét, Hạn đăng ký nhấp nháy & Huy hiệu trạng thái */}
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0C5776] text-white">
@@ -318,6 +349,35 @@ export default function HomePage() {
                             </span>
                           ))}
                         </div>
+
+                        {/* HUY HIỆU HẠN ĐĂNG KÝ CÓ CHẤM NHẤP NHÁY (ANIMATE-PING & ANIMATE-PULSE) */}
+                        {deadlineInfo && (
+                          <div>
+                            {deadlineInfo.isExpired ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                <Clock className="w-3 h-3 text-slate-400" />
+                                {deadlineInfo.text}
+                              </span>
+                            ) : deadlineInfo.isUrgent ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+                                </span>
+                                <Timer className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                {deadlineInfo.text}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-pulse relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                </span>
+                                <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                                {deadlineInfo.text}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Badge trạng thái công nhận */}
@@ -357,7 +417,7 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    {/* Hàng 3: Chi tiết thông tin */}
+                    {/* Hàng 3: Chi tiết thông tin (bao gồm Hạn đăng ký) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Building2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
@@ -365,8 +425,14 @@ export default function HomePage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                        <span>Thời gian: {formatDateVN(act.start_date)} → {formatDateVN(act.end_date)}</span>
+                        <span>Thời gian diễn ra: {formatDateVN(act.start_date)} → {formatDateVN(act.end_date)}</span>
                       </div>
+                      {act.registration_deadline && (
+                        <div className="flex items-center gap-2">
+                          <Timer className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                          <span>Hạn chót đăng ký: <strong className="text-rose-600 font-bold">{formatDateVN(act.registration_deadline)}</strong></span>
+                        </div>
+                      )}
                       {act.location && (
                         <div className="flex items-center gap-2">
                           <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
