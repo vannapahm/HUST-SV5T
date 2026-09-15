@@ -868,15 +868,15 @@ export default function StudentPortfolioPage() {
                                                 onChange={(e) => setAcademicData({ ...academicData, student_year: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                                             >
-                                                <option value="1">Năm thứ 1</option>
-                                                <option value="2">Năm thứ 2</option>
-                                                <option value="3">Năm thứ 3</option>
-                                                <option value="4">Năm thứ 4</option>
-                                                <option value="5">Năm thứ 5</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block font-semibold mb-1">Đoàn viên / Đảng viên</label>
+                                            <label className="block font-semibold mb-1">Đoàn viên/ Đảng viên</label>
                                             <select
                                                 value={academicData.union_status}
                                                 onChange={(e) => setAcademicData({ ...academicData, union_status: e.target.value })}
