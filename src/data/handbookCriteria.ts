@@ -22,7 +22,6 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
             DAO_DUC: {
                 mandatory: [
                     'Điểm rèn luyện trung bình 02 học kỳ chính đạt từ 80 điểm trở lên (trên thang điểm 100 theo quy chế đánh giá kết quả rèn luyện sinh viên hiện hành của Bộ Giáo dục và Đào tạo, Bộ Lao động - Thương binh và Xã hội)',
-                    'Đối với sinh viên các hệ đào tạo không sử dụng Điểm rèn luyện, yêu cầu có giấy xác nhận của giáo viên chủ nhiệm đạt hạnh kiểm tốt trong năm học.',
                     'Không vi phạm pháp luật và các quy chế, nội quy của Đại học, quy định của địa phương và cộng đồng.'
                 ],
                 elective: [
