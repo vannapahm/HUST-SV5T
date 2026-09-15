@@ -1027,10 +1027,10 @@ export default function StudentPortfolioPage() {
                                         </span>
                                     </div>
 
-                                    {/* Kỳ 2025.1 */}
+                                    {/* Kỳ 2025.2 */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded-lg border border-slate-200">
                                         <div className="font-semibold text-xs text-[#001C44] flex items-center">
-                                            Kỳ học 2025.1:
+                                            Kỳ học 2025.2:
                                         </div>
                                         <div>
                                             <label className="block text-[11px] text-slate-500 mb-0.5">GPA Kỳ 1 (thang 4.0)</label>
