@@ -1081,12 +1081,13 @@ export default function StudentPortfolioPage() {
                                         3. Thể lực & Ngoại ngữ
                                     </span>
                                     <div>
-                                        <label className="block font-semibold mb-1">Giáo dục thể chất *</label>
+                                        <label className="block font-semibold mb-1">Giáo dục thể chất</label>
                                         <select
                                             value={academicData.physical_education_status}
                                             onChange={(e) => setAcademicData({ ...academicData, physical_education_status: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-xs"
                                         >
+                                            <option value="">-- Chưa hoàn thành / Bổ sung sau --</option>
                                             <option value="Hoàn thành chương trình đào tạo Giáo dục thể chất theo quy định tại Đại học Bách khoa Hà Nội (hoàn thành đủ 05 học phần GDTC).">
                                                 Hoàn thành đủ 05 học phần GDTC
                                             </option>
@@ -1096,10 +1097,9 @@ export default function StudentPortfolioPage() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block font-semibold mb-1">Trình độ Ngoại ngữ *</label>
+                                        <label className="block font-semibold mb-1">Trình độ Ngoại ngữ</label>
                                         <input
                                             type="text"
-                                            required
                                             placeholder="VD: Miễn học tiếng Anh / TOEIC nội bộ: 745 ngày 15/04/2025..."
                                             value={academicData.foreign_language_status}
                                             onChange={(e) => setAcademicData({ ...academicData, foreign_language_status: e.target.value })}
