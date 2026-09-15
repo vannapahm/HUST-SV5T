@@ -992,8 +992,9 @@ export default function StudentPortfolioPage() {
                                                 step="0.01"
                                                 min="0"
                                                 max="4"
-                                                value={academicData.gpa_sem1}
-                                                onChange={(e) => setAcademicData({ ...academicData, gpa_sem1: parseFloat(e.target.value) || 0 })}
+                                                placeholder="VD: 3.2"
+                                                value={academicData.gpa_sem1 === 0 ? '' : academicData.gpa_sem1}
+                                                onChange={(e) => setAcademicData({ ...academicData, gpa_sem1: e.target.value })}
                                                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-bold text-[#0C5776]"
                                             />
                                         </div>
@@ -1002,8 +1003,9 @@ export default function StudentPortfolioPage() {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={academicData.credits_sem1}
-                                                onChange={(e) => setAcademicData({ ...academicData, credits_sem1: parseInt(e.target.value) || 0 })}
+                                                placeholder="VD: 20"
+                                                value={academicData.credits_sem1 === 0 ? '' : academicData.credits_sem1}
+                                                onChange={(e) => setAcademicData({ ...academicData, credits_sem1: e.target.value })}
                                                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg"
                                             />
                                         </div>
@@ -1021,8 +1023,9 @@ export default function StudentPortfolioPage() {
                                                 step="0.01"
                                                 min="0"
                                                 max="4"
-                                                value={academicData.gpa_sem2}
-                                                onChange={(e) => setAcademicData({ ...academicData, gpa_sem2: parseFloat(e.target.value) || 0 })}
+                                                placeholder="VD: 3.5"
+                                                value={academicData.gpa_sem2 === 0 ? '' : academicData.gpa_sem2}
+                                                onChange={(e) => setAcademicData({ ...academicData, gpa_sem2: e.target.value })}
                                                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-bold text-[#0C5776]"
                                             />
                                         </div>
@@ -1031,8 +1034,9 @@ export default function StudentPortfolioPage() {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={academicData.credits_sem2}
-                                                onChange={(e) => setAcademicData({ ...academicData, credits_sem2: parseInt(e.target.value) || 0 })}
+                                                placeholder="VD: 20"
+                                                value={academicData.credits_sem2 === 0 ? '' : academicData.credits_sem2}
+                                                onChange={(e) => setAcademicData({ ...academicData, credits_sem2: e.target.value })}
                                                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg"
                                             />
                                         </div>
@@ -1046,8 +1050,9 @@ export default function StudentPortfolioPage() {
                                                 type="number"
                                                 min="0"
                                                 max="100"
-                                                value={academicData.drl_sem1}
-                                                onChange={(e) => setAcademicData({ ...academicData, drl_sem1: parseFloat(e.target.value) || 0 })}
+                                                placeholder="VD: 90"
+                                                value={academicData.drl_sem1 === 0 ? '' : academicData.drl_sem1}
+                                                onChange={(e) => setAcademicData({ ...academicData, drl_sem1: e.target.value })}
                                                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-bold text-emerald-700"
                                             />
                                         </div>
@@ -1057,8 +1062,9 @@ export default function StudentPortfolioPage() {
                                                 type="number"
                                                 min="0"
                                                 max="100"
-                                                value={academicData.drl_sem2}
-                                                onChange={(e) => setAcademicData({ ...academicData, drl_sem2: parseFloat(e.target.value) || 0 })}
+                                                placeholder="VD: 95"
+                                                value={academicData.drl_sem2 === 0 ? '' : academicData.drl_sem2}
+                                                onChange={(e) => setAcademicData({ ...academicData, drl_sem2: e.target.value })}
                                                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-bold text-emerald-700"
                                             />
                                         </div>
