@@ -182,11 +182,10 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
             },
             HOC_TAP: {
                 mandatory: [
-                    'Đối với sinh viên Đại học: Điểm trung bình học tập năm học đạt từ 3.4/4.0 trở lên (hoặc 8.5/10).',
-                    'Đối với sinh viên có đề tài NCKH đạt giải cấp Bộ hoặc bài báo quốc tế: Điểm trung bình học tập đạt từ 3.2/4.0 trở lên.'
+                    'Đối với sinh viên Đại học: Điểm trung bình chung học tập cả năm học đạt từ 3.4/4.0 trở lên.'
                 ],
                 elective: [
-                    'Có đề tài Nghiên cứu khoa học sinh viên đạt giải Nhất, Nhì, Ba cấp Bộ hoặc Giải thưởng Sinh viên nghiên cứu khoa học Euréka.',
+                    'Có đề tài NCKH (không áp dụng đối với luận văn tốt nghiệp) đạt giải từ cấp tỉnh, thành phố trở lên.',
                     'Có ít nhất 01 bài báo khoa học đăng trên tạp chí quốc tế uy tín thuộc danh mục Scopus hoặc Web of Science (WoS).',
                     'Đoạt giải Nhất, Nhì, Ba trong các kỳ thi Olympic sinh viên toàn quốc hoặc cuộc thi sáng tạo, khởi nghiệp cấp quốc gia/quốc tế.'
                 ]
