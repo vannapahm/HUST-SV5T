@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   Calendar, MapPin, Building2, Award, ExternalLink, Filter,
   Search, Sparkles, BookOpen, PlusCircle, CheckCircle2,
-  Clock, AlertCircle, ArrowRight, ShieldCheck, Timer
+  Clock, AlertCircle, ArrowRight, ShieldCheck, Timer, Settings
 } from 'lucide-react';
 
 interface Activity {
@@ -167,7 +167,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Các nút truy cập nhanh */}
+              {/* Các nút truy cập nhanh trên Header */}
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href="/tieu-chi"
@@ -192,6 +192,16 @@ export default function HomePage() {
                   <PlusCircle className="w-4 h-4 text-[#0C5776]" />
                   Đề xuất hoạt động
                 </Link>
+
+                {/* NÚT BẤM CHO QUẢN TRỊ VIÊN */}
+                <Link
+                  href="/tong-hop"
+                  title="Chuyển đến bàn làm việc Quản trị viên"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0C5776] hover:bg-[#2D99AE] text-white text-xs font-semibold transition-all border border-white/20 shadow-sm"
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#BCFEFE]" />
+                  Quản trị viên
+                </Link>
               </div>
             </div>
           </div>
@@ -205,7 +215,7 @@ export default function HomePage() {
               <div className="text-xs">
                 <div className="font-bold text-emerald-900">Hoạt động tự động ghi nhận ({approvedCount})</div>
                 <div className="text-emerald-700 mt-0.5 leading-relaxed">
-                  Đã được BTK HSV Đại học phê duyệt trước tiêu chuẩn. Sinh viên tham gia mặc định được công nhận tiêu chí.
+                  Đã được Quản trị viên phê duyệt trước tiêu chuẩn. Sinh viên tham gia mặc định được công nhận tiêu chí.
                 </div>
               </div>
             </div>
@@ -215,7 +225,7 @@ export default function HomePage() {
               <div className="text-xs">
                 <div className="font-bold text-amber-900">Hoạt động bên ngoài - Chờ xét ({pendingCount})</div>
                 <div className="text-amber-700 mt-0.5 leading-relaxed">
-                  Đang tổ chức bên ngoài. Sinh viên chủ động tham gia lấy minh chứng; tiêu chí sẽ được BTK rà soát cuối năm.
+                  Đang tổ chức bên ngoài. Sinh viên chủ động tham gia lấy minh chứng; tiêu chí sẽ được Quản trị viên rà soát sau.
                 </div>
               </div>
             </div>
@@ -269,7 +279,7 @@ export default function HomePage() {
                     }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  Chờ xét cuối năm ({pendingCount})
+                  Chờ xét duyệt ({pendingCount})
                 </button>
               </div>
 
@@ -291,7 +301,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Danh sách hoạt động (ĐÃ BỎ LINK TRÙNG LẶP) */}
+          {/* Danh sách hoạt động */}
           <div className="space-y-4">
             <div className="text-xs text-slate-500 px-1">
               Đang hiển thị: <strong className="text-[#001C44]">{filteredActivities.length}</strong> hoạt động
@@ -376,12 +386,12 @@ export default function HomePage() {
                         ) : isPending ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
                             <Clock className="w-3.5 h-3.5 text-amber-600" />
-                            Chờ xét cuối năm
+                            Chờ xét duyệt
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-300">
                             <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
-                            BTK không công nhận
+                            Không công nhận
                           </span>
                         )}
                       </div>
@@ -465,14 +475,24 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-1 bg-white">
+      {/* Footer có kèm liên kết Cổng Quản trị viên */}
+      <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-2 bg-white">
         <p className="text-slate-400">
           Đại học Bách khoa Hà Nội • Bản quyền © 2026
         </p>
-        <p className="text-[#0C5776] pt-1">
-          Xây dựng và phát triển bởi <span className="font-semibold text-[#001C44]">Phạm Thị Vân Anh</span>
-        </p>
+        <div className="flex items-center justify-center gap-3 text-[#0C5776]">
+          <span>
+            Xây dựng và phát triển bởi <strong className="text-[#001C44]">Phạm Thị Vân Anh</strong>
+          </span>
+          <span>•</span>
+          <Link
+            href="/tong-hop"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#0C5776] hover:text-[#001C44] hover:underline"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Bàn làm việc Quản trị viên
+          </Link>
+        </div>
       </footer>
     </main>
   );
