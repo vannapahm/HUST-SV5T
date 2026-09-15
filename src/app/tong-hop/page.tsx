@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     Download, ExternalLink, Calendar, MapPin, Building2, User,
     Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil,
-    CheckCircle2, Clock, AlertCircle
+    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from "@/data/criteria";
@@ -71,7 +71,8 @@ const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
 };
 
 export default function SummaryPage() {
-    const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS'>('ACTIVITIES');
+    // 3 TAB: ACTIVITIES | PROPOSALS | STUDENTS (Tra cứu hồ sơ)
+    const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS' | 'STUDENTS'>('ACTIVITIES');
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [officialActivities, setOfficialActivities] = useState<Activity[]>([]);
@@ -89,6 +90,12 @@ export default function SummaryPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [updating, setUpdating] = useState(false);
+
+    // State Tra cứu hồ sơ sinh viên (Tab 3)
+    const [adminSearchMssv, setAdminSearchMssv] = useState('');
+    const [adminStudentRecords, setAdminStudentRecords] = useState<any[]>([]);
+    const [adminStudentLoading, setAdminStudentLoading] = useState(false);
+    const [adminHasSearched, setAdminHasSearched] = useState(false);
 
     // Form thêm mới
     const [officialForm, setOfficialForm] = useState({
@@ -149,7 +156,26 @@ export default function SummaryPage() {
         };
     }, []);
 
-    // CẬP NHẬT TRẠNG THÁI HOẠT ĐỘNG VÀ ĐỒNG BỘ DÂY CHUYỀN SANG HỒ SƠ SINH VIÊN
+    // HÀM TRA CỨU HỒ SƠ SINH VIÊN (DÀNH CHO ADMIN)
+    const handleAdminLookupStudent = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const cleanMssv = adminSearchMssv.trim();
+        if (!cleanMssv) return;
+
+        setAdminStudentLoading(true);
+        setAdminHasSearched(true);
+
+        const { data } = await supabase
+            .from('student_activities')
+            .select('*')
+            .eq('student_id', cleanMssv)
+            .order('participation_date', { ascending: false });
+
+        if (data) setAdminStudentRecords(data);
+        setAdminStudentLoading(false);
+    };
+
+    // CẬP NHẬT TRẠNG THÁI VÀ ĐỒNG BỘ DÂY CHUYỀN
     const handleActivityStatusChange = async (act: Activity, newStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => {
         const confirmChange = confirm(
             `Xác nhận đổi trạng thái hoạt động "${act.title}" thành:\n` +
@@ -158,7 +184,6 @@ export default function SummaryPage() {
         );
         if (!confirmChange) return;
 
-        // 1. Cập nhật bảng activities ngoài trang chủ
         const { error: actError } = await supabase
             .from('activities')
             .update({ status: newStatus })
@@ -169,13 +194,11 @@ export default function SummaryPage() {
             return;
         }
 
-        // 2. Cập nhật dây chuyền sang bảng student_activities
         await supabase
             .from('student_activities')
             .update({ status: newStatus })
             .eq('activity_id', String(act.id));
 
-        // Cập nhật lại giao diện
         setOfficialActivities((prev) =>
             prev.map((item) => (item.id === act.id ? { ...item, status: newStatus } : item))
         );
@@ -187,7 +210,6 @@ export default function SummaryPage() {
         );
     };
 
-    // Thêm hoạt động mới
     const handleCreateOfficialActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!officialForm.title || !officialForm.organizer || !officialForm.start_date || !officialForm.criteria_detail) {
@@ -280,7 +302,6 @@ export default function SummaryPage() {
             return;
         }
 
-        // Cập nhật tên hoạt động tương ứng trong student_activities
         await supabase
             .from('student_activities')
             .update({
@@ -469,7 +490,7 @@ export default function SummaryPage() {
                                     Tổng hợp hoạt động xét chọn SV5T
                                 </h1>
                                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
-                                    Quản trị viên: Phê duyệt, điều chỉnh trạng thái và đồng bộ dây chuyền sang hồ sơ sinh viên.
+                                    Quản trị viên: Phê duyệt, điều chỉnh trạng thái và tra cứu hồ sơ sinh viên toàn hệ thống.
                                 </p>
                             </div>
 
@@ -495,7 +516,7 @@ export default function SummaryPage() {
                 </header>
 
                 <div className="max-w-5xl mx-auto px-4 mt-6">
-                    {/* Thanh Tab */}
+                    {/* Thanh 3 Tab: Hoạt động | Đề xuất | Tra cứu hồ sơ */}
                     <div className="flex border-b border-slate-200 gap-4 mb-4">
                         <button
                             onClick={() => setActiveTab('ACTIVITIES')}
@@ -505,7 +526,7 @@ export default function SummaryPage() {
                                 }`}
                         >
                             <Globe className="w-4 h-4 text-[#0C5776]" />
-                            Hoạt động trên hệ thống (Trang chủ)
+                            Hoạt động trên hệ thống
                             <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-[#0C5776] font-bold">
                                 {officialActivities.length}
                             </span>
@@ -523,52 +544,66 @@ export default function SummaryPage() {
                                 {proposals.length}
                             </span>
                         </button>
+
+                        {/* Nút Tab 3: Tra cứu hồ sơ sinh viên */}
+                        <button
+                            onClick={() => setActiveTab('STUDENTS')}
+                            className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'STUDENTS'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                                }`}
+                        >
+                            <User className="w-4 h-4 text-[#0C5776]" />
+                            Tra cứu hồ sơ sinh viên (Admin)
+                        </button>
                     </div>
 
-                    {/* Bộ lọc */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs mb-4">
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
-                            <div className="flex items-center gap-1.5">
-                                <Filter className="w-3.5 h-3.5 text-[#0C5776]" />
-                                <span className="font-medium">Tiêu chuẩn:</span>
-                                <select
-                                    value={filterStandard}
-                                    onChange={(e) => setFilterStandard(e.target.value)}
-                                    className="px-2.5 py-1 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
-                                >
-                                    <option value="ALL">Tất cả</option>
-                                    <option value="DAO_DUC">Đạo đức tốt</option>
-                                    <option value="HOC_TAP">Học tập tốt</option>
-                                    <option value="THE_LUC">Thể lực tốt</option>
-                                    <option value="TINH_NGUYEN">Tình nguyện tốt</option>
-                                    <option value="HOI_NHAP">Hội nhập tốt</option>
-                                </select>
-                            </div>
-
-                            {activeTab === 'PROPOSALS' && (
+                    {/* Bộ lọc (chỉ hiện khi ở Tab Hoạt động hoặc Đề xuất) */}
+                    {activeTab !== 'STUDENTS' && (
+                        <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs mb-4">
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="font-medium">Trạng thái:</span>
+                                    <Filter className="w-3.5 h-3.5 text-[#0C5776]" />
+                                    <span className="font-medium">Tiêu chuẩn:</span>
                                     <select
-                                        value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        value={filterStandard}
+                                        onChange={(e) => setFilterStandard(e.target.value)}
                                         className="px-2.5 py-1 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
                                     >
                                         <option value="ALL">Tất cả</option>
-                                        <option value="PENDING">🟡 Mới tiếp nhận</option>
-                                        <option value="SUBMITTED">🔵 Đã gửi đề xuất</option>
-                                        <option value="APPROVED">🟢 BTK công nhận</option>
-                                        <option value="REJECTED">🔴 BTK từ chối</option>
+                                        <option value="DAO_DUC">Đạo đức tốt</option>
+                                        <option value="HOC_TAP">Học tập tốt</option>
+                                        <option value="THE_LUC">Thể lực tốt</option>
+                                        <option value="TINH_NGUYEN">Tình nguyện tốt</option>
+                                        <option value="HOI_NHAP">Hội nhập tốt</option>
                                     </select>
                                 </div>
-                            )}
-                        </div>
 
-                        <div className="text-xs text-slate-500">
-                            Hiển thị: <strong className="text-[#001C44]">
-                                {activeTab === 'ACTIVITIES' ? filteredActivities.length : filteredProposals.length}
-                            </strong> hoạt động
+                                {activeTab === 'PROPOSALS' && (
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-medium">Trạng thái:</span>
+                                        <select
+                                            value={filterStatus}
+                                            onChange={(e) => setFilterStatus(e.target.value)}
+                                            className="px-2.5 py-1 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
+                                        >
+                                            <option value="ALL">Tất cả</option>
+                                            <option value="PENDING">🟡 Mới tiếp nhận</option>
+                                            <option value="SUBMITTED">🔵 Đã gửi đề xuất</option>
+                                            <option value="APPROVED">🟢 BTK công nhận</option>
+                                            <option value="REJECTED">🔴 BTK từ chối</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="text-xs text-slate-500">
+                                Hiển thị: <strong className="text-[#001C44]">
+                                    {activeTab === 'ACTIVITIES' ? filteredActivities.length : filteredProposals.length}
+                                </strong> hoạt động
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* ======================= TAB 1: HOẠT ĐỘNG TRÊN HỆ THỐNG ======================= */}
                     {activeTab === 'ACTIVITIES' && (
@@ -611,7 +646,6 @@ export default function SummaryPage() {
                                                     </div>
                                                 </div>
 
-                                                {/* Bộ đổi trạng thái duyệt và đồng bộ dây chuyền */}
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs text-slate-500 font-medium">Trạng thái:</span>
                                                     <select
@@ -824,9 +858,84 @@ export default function SummaryPage() {
                             )}
                         </div>
                     )}
+
+                    {/* ======================= TAB 3: TRA CỨU HỒ SƠ SINH VIÊN (ADMIN) ======================= */}
+                    {activeTab === 'STUDENTS' && (
+                        <div className="space-y-4">
+                            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
+                                <div className="flex items-center gap-2 text-xs font-bold text-[#001C44]">
+                                    <ShieldCheck className="w-4 h-4 text-[#0C5776]" />
+                                    <span>Tra cứu hồ sơ sinh viên toàn hệ thống (Không cần mã PIN)</span>
+                                </div>
+                                <form onSubmit={handleAdminLookupStudent} className="flex flex-col sm:flex-row gap-2">
+                                    <div className="relative flex-1">
+                                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="Nhập Mã số sinh viên (MSSV) cần kiểm tra (VD: 20211234)..."
+                                            value={adminSearchMssv}
+                                            onChange={(e) => setAdminSearchMssv(e.target.value)}
+                                            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="px-5 py-2 bg-[#0C5776] text-white font-semibold text-xs rounded-lg hover:bg-[#001C44] transition-colors shadow-xs"
+                                    >
+                                        Xem toàn bộ hồ sơ
+                                    </button>
+                                </form>
+                            </div>
+
+                            {adminStudentLoading ? (
+                                <div className="py-12 text-center text-xs text-slate-500">Đang tải hồ sơ sinh viên...</div>
+                            ) : adminStudentRecords.length > 0 ? (
+                                <div className="space-y-3">
+                                    <div className="text-xs text-slate-600 font-bold px-1 flex items-center justify-between">
+                                        <span>Hồ sơ MSSV: <strong className="text-[#001C44]">{adminSearchMssv}</strong></span>
+                                        <span>Tổng cộng: {adminStudentRecords.length} hoạt động</span>
+                                    </div>
+
+                                    {adminStudentRecords.map((r) => (
+                                        <div key={r.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5 hover:border-slate-300 transition-all">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#0C5776] text-white">
+                                                    {CRITERIA_MAP[r.target_standard] || r.target_standard}
+                                                </span>
+                                                <span className="text-xs text-slate-400 flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" /> {r.participation_date}
+                                                </span>
+                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${r.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
+                                                        r.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                                                            'bg-rose-50 text-rose-700 border-rose-300'
+                                                    }`}>
+                                                    {r.status === 'APPROVED' ? '✓ Đã công nhận' : r.status === 'PENDING' ? '⏳ Chờ xét' : '✕ Bị loại'}
+                                                </span>
+                                            </div>
+
+                                            <h4 className="text-sm font-bold text-[#001C44]">{r.activity_title}</h4>
+                                            <p className="text-xs text-slate-600"><strong>Tiêu chí:</strong> {r.criteria_detail}</p>
+                                            {r.organizer && <p className="text-xs text-slate-500">Đơn vị tổ chức: {r.organizer}</p>}
+                                            {r.proof_url && (
+                                                <a href={r.proof_url} target="_blank" rel="noreferrer" className="text-xs text-[#0C5776] underline inline-flex items-center gap-1 pt-1">
+                                                    Xem minh chứng <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : adminHasSearched ? (
+                                <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-xs text-slate-500">
+                                    Không tìm thấy dữ liệu hoạt động nào của sinh viên có MSSV: <strong>{adminSearchMssv}</strong>.
+                                </div>
+                            ) : null}
+                        </div>
+                    )}
                 </div>
             </div>
 
+            {/* Footer */}
             <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-1 bg-white">
                 <p className="text-slate-400">
                     Đại học Bách khoa Hà Nội • Bản quyền © 2026
@@ -839,16 +948,16 @@ export default function SummaryPage() {
             {/* MODAL 1: THÊM HOẠT ĐỘNG MỚI */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
-                    <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white">
                             <div>
                                 <h2 className="text-base font-bold text-[#001C44]">Thêm hoạt động lên hệ thống</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">Chọn trạng thái để phân loại tự động ghi nhận hoặc chờ xét cuối năm.</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Phân loại tự động ghi nhận hoặc chờ xét cuối năm.</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsAddModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -934,7 +1043,7 @@ export default function SummaryPage() {
                                                                 });
                                                             }
                                                         }}
-                                                        className="rounded border-slate-300 text-[#0C5776] focus:ring-0"
+                                                        className="rounded border-slate-300 text-[#0C5776]"
                                                     />
                                                     <span>{lvl.label}</span>
                                                 </label>
@@ -987,6 +1096,16 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (nếu có)</label>
+                                    <input
+                                        type="date"
+                                        value={officialForm.registration_deadline}
+                                        onChange={(e) => setOfficialForm({ ...officialForm, registration_deadline: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                    />
+                                </div>
+
+                                <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Cách thức minh chứng *</label>
                                     <input
                                         type="text"
@@ -1010,11 +1129,11 @@ export default function SummaryPage() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2.5 px-6 py-3.5 border-t border-slate-100 bg-slate-50 shrink-0">
+                            <div className="flex justify-end gap-2.5 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
                                 <button
                                     type="button"
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition-colors text-xs"
+                                    className="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-100 text-xs"
                                 >
                                     Hủy
                                 </button>
@@ -1034,8 +1153,8 @@ export default function SummaryPage() {
             {/* MODAL 2: CHỈNH SỬA HOẠT ĐỘNG */}
             {isEditModalOpen && editingActivity && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
-                    <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-150">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0 bg-white">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white">
                             <div>
                                 <h2 className="text-base font-bold text-[#001C44]">Chỉnh sửa thông tin hoạt động</h2>
                                 <p className="text-xs text-slate-500 mt-0.5">Dữ liệu sẽ đồng bộ tự động sang hồ sơ của các sinh viên tham gia.</p>
@@ -1043,7 +1162,7 @@ export default function SummaryPage() {
                             <button
                                 type="button"
                                 onClick={() => setIsEditModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -1129,7 +1248,7 @@ export default function SummaryPage() {
                                                                 });
                                                             }
                                                         }}
-                                                        className="rounded border-slate-300 text-[#0C5776] focus:ring-0"
+                                                        className="rounded border-slate-300 text-[#0C5776]"
                                                     />
                                                     <span>{lvl.label}</span>
                                                 </label>
@@ -1182,6 +1301,16 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký</label>
+                                    <input
+                                        type="date"
+                                        value={editingActivity.registration_deadline?.split('T')[0] || ''}
+                                        onChange={(e) => setEditingActivity({ ...editingActivity, registration_deadline: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                    />
+                                </div>
+
+                                <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Cách thức minh chứng</label>
                                     <input
                                         type="text"
@@ -1202,11 +1331,11 @@ export default function SummaryPage() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2.5 px-6 py-3.5 border-t border-slate-100 bg-slate-50 shrink-0">
+                            <div className="flex justify-end gap-2.5 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
                                 <button
                                     type="button"
                                     onClick={() => setIsEditModalOpen(false)}
-                                    className="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition-colors text-xs"
+                                    className="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-100 text-xs"
                                 >
                                     Hủy
                                 </button>
