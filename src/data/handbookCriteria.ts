@@ -37,7 +37,6 @@ export const HANDBOOK_DATA: Record<string, LevelData> = {
                 mandatory: [
                     'Đối với sinh viên Đại học: Điểm trung bình học tập 02 học kỳ chính đạt từ 2.8/4.0 trở lên, bắt buộc đạt thêm 01 hoạt động trong các tiêu chí phụ.',
                     'Đối với sinh viên là cán bộ Đoàn Thanh niên, Hội Sinh viên, đang giữ chức vụ từ Ủy viên Ban Chấp hành Chi đoàn, Chi hội trở lên: Điểm trung bình học tập 02 học kỳ chính học đạt từ 2.5/4.0 trở lên, bắt buộc đạt thêm 01 hoạt động trong các tiêu chí phụ.',
-                    'Đối với sinh viên trường Cao đẳng Nghề: Điểm trung bình học tập cả năm học đạt từ 6,0/10 trở lên, ưu tiên tiêu chí phụ.',
                     'Đối với sinh viên diện chương trình trao đổi sinh viên trong 01 học kỳ hoặc 02 kỳ học chính: Điểm trung bình học tập 02 học kỳ chính đạt từ 2.8/4.0 trở lên, cần làm đơn trình lên Ban Thư ký Hội Sinh viên Đại học phê duyệt, bắt buộc đạt thêm 01 hoạt động trong các tiêu chí phụ.'
                 ],
                 elective: [
