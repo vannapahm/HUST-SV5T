@@ -1,172 +1,85 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { Calendar, MapPin, Building2, CheckCircle2, ExternalLink, CalendarPlus, Clock } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabaseClient';
+import {
+  Calendar, MapPin, Building2, Award, ExternalLink, Filter,
+  Search, Sparkles, BookOpen, User, PlusCircle, CheckCircle2,
+  Clock, AlertCircle, ArrowRight, ShieldCheck
+} from 'lucide-react';
 
 interface Activity {
-  id: string;
+  id: string | number;
   title: string;
   organizer: string;
-  content_description: string;
-  project_url: string;
+  target_audience?: string;
+  content_description?: string;
+  project_url?: string;
   start_date: string;
   end_date: string;
-  location: string;
-  proof_method: string;
-  supported_standard: string;
-  target_levels: string[];
   registration_deadline?: string;
+  location?: string;
+  proof_method?: string;
+  supported_standard: string;
+  criteria_detail?: string;
+  target_levels?: string[];
+  status?: 'APPROVED' | 'PENDING' | 'REJECTED';
 }
 
-const CRITERIA_MAP: Record<string, { label: string; badgeStyle: string }> = {
-  DAO_DUC: {
-    label: 'Đạo đức tốt',
-    badgeStyle: 'bg-[#F8DAD0]/60 text-[#001C44] border-[#F8DAD0]'
-  },
-  HOC_TAP: {
-    label: 'Học tập tốt',
-    badgeStyle: 'bg-[#BCFEFE]/50 text-[#0C5776] border-[#2D99AE]/40'
-  },
-  THE_LUC: {
-    label: 'Thể lực tốt',
-    badgeStyle: 'bg-[#2D99AE]/15 text-[#0C5776] border-[#2D99AE]/30'
-  },
-  TINH_NGUYEN: {
-    label: 'Tình nguyện tốt',
-    badgeStyle: 'bg-[#F8DAD0]/40 text-[#001C44] border-[#F8DAD0]'
-  },
-  HOI_NHAP: {
-    label: 'Hội nhập tốt',
-    badgeStyle: 'bg-[#0C5776]/10 text-[#0C5776] border-[#0C5776]/25'
-  },
+const CRITERIA_MAP: Record<string, string> = {
+  DAO_DUC: 'Đạo đức tốt',
+  HOC_TAP: 'Học tập tốt',
+  THE_LUC: 'Thể lực tốt',
+  TINH_NGUYEN: 'Tình nguyện tốt',
+  HOI_NHAP: 'Hội nhập tốt',
 };
 
-const LEVEL_STYLE: Record<string, { label: string; className: string }> = {
-  DAI_HOC: {
-    label: 'Cấp Đại học',
-    className: 'bg-[#BCFEFE]/40 text-[#0C5776] border-[#2D99AE]/30'
-  },
-  THANH_PHO: {
-    label: 'Cấp Thành phố',
-    className: 'bg-[#2D99AE]/20 text-[#001C44] border-[#2D99AE]/40'
-  },
-  TRUNG_UONG: {
-    label: 'Cấp Trung ương',
-    className: 'bg-[#F8DAD0] text-[#001C44] border-[#F8DAD0] font-semibold'
-  },
-};
-
-const FILTER_TABS = [
-  { key: 'ALL', label: 'Tất cả' },
-  { key: 'DAO_DUC', label: 'Đạo đức tốt' },
-  { key: 'HOC_TAP', label: 'Học tập tốt' },
-  { key: 'THE_LUC', label: 'Thể lực tốt' },
-  { key: 'TINH_NGUYEN', label: 'Tình nguyện tốt' },
-  { key: 'HOI_NHAP', label: 'Hội nhập tốt' },
-];
-
-export default function ActivityHub() {
+export default function HomePage() {
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [activeTab, setActiveTab] = useState('ALL');
   const [loading, setLoading] = useState(true);
 
-  // Tính trạng thái hạn đăng ký
-  const getDeadlineStatus = (deadlineStr?: string) => {
-    if (!deadlineStr) return null;
-    const deadline = new Date(deadlineStr).getTime();
-    const now = new Date().getTime();
-    const diffMs = deadline - now;
+  // Bộ lọc
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStandard, setSelectedStandard] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL'); // 'ALL' | 'APPROVED' | 'PENDING'
 
-    if (diffMs <= 0) {
-      return {
-        label: 'Đã đóng đơn đăng ký',
-        badgeClass: 'bg-slate-100 text-slate-500 border-slate-200',
-      };
+  const fetchActivities = async () => {
+    const { data, error } = await supabase
+      .from('activities')
+      .select('*')
+      .order('start_date', { ascending: false });
+
+    if (!error && data) {
+      setActivities(data as Activity[]);
     }
-
-    const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
-    const daysLeft = Math.floor(hoursLeft / 24);
-
-    if (hoursLeft < 24) {
-      return {
-        label: `⚡ Sắp đóng đơn: còn ${hoursLeft} giờ`,
-        badgeClass: 'bg-amber-50 text-amber-700 border-amber-300 font-semibold animate-pulse',
-      };
-    }
-
-    return {
-      label: `🟢 Đang mở đơn: còn ${daysLeft} ngày`,
-      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium',
-    };
-  };
-
-  // Tạo đường dẫn đồng bộ sự kiện vào Google Lịch
-  const makeGoogleCalendarUrl = (act: Activity) => {
-    const title = encodeURIComponent(`[SV5T] ${act.title}`);
-    const details = encodeURIComponent(
-      `Đơn vị tổ chức: ${act.organizer}\nTiêu chí: ${act.content_description}\nCách thức minh chứng: ${act.proof_method}\nLink bài viết/ đề án: ${act.project_url || ''}`
-    );
-    const location = encodeURIComponent(act.location || 'Đại học Bách khoa Hà Nội');
-    const sDate = act.start_date ? act.start_date.replace(/-/g, '') : '';
-    const eDate = act.end_date ? act.end_date.replace(/-/g, '') : sDate;
-
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sDate}/${eDate}&details=${details}&location=${location}`;
+    setLoading(false);
   };
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('start_date', { ascending: false });
-
-      if (!error && data) {
-        setActivities(data);
-      }
-      setLoading(false);
-    };
-
-    // 1. Tải dữ liệu ban đầu
     fetchActivities();
 
-    // 2. Tự động đồng bộ lại khi có kết nối mạng trở lại
-    const handleOnline = () => {
-      fetchActivities();
-    };
-
-    // 3. Tự động tải lại khi người dùng quay lại tab trình duyệt này
+    // Tự động tải lại khi kết nối mạng phục hồi
+    const handleOnline = () => fetchActivities();
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchActivities();
-      }
+      if (document.visibilityState === 'visible') fetchActivities();
     };
 
     window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // 4. Lắng nghe thay đổi tức thì (Realtime) từ Supabase
+    // Lắng nghe thay đổi tức thì từ Supabase
     const channel = supabase
-      .channel('realtime_activities')
+      .channel('realtime_activities_home')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'activities' },
-        (payload: any) => {
-          if (payload.eventType === 'INSERT') {
-            setActivities((prev) => [payload.new as Activity, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setActivities((prev) => prev.filter((item) => item.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setActivities((prev) =>
-              prev.map((item) => (item.id === payload.new.id ? (payload.new as Activity) : item))
-            );
-          }
+        () => {
+          fetchActivities();
         }
       )
       .subscribe();
 
-    // Dọn dẹp sự kiện và kênh kết nối khi rời trang
     return () => {
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -174,195 +87,333 @@ export default function ActivityHub() {
     };
   }, []);
 
-  const displayedActivities = activities.filter((act) =>
-    activeTab === 'ALL' ? true : act.supported_standard === activeTab
-  );
+  const formatDateVN = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${day}/${month}/${year}`;
+    }
+    return dateStr;
+  };
+
+  // Lọc danh sách hoạt động
+  const filteredActivities = useMemo(() => {
+    return activities.filter((act) => {
+      const actStatus = act.status || 'APPROVED';
+
+      const matchStandard = selectedStandard === 'ALL' || act.supported_standard === selectedStandard;
+      const matchStatus = selectedStatus === 'ALL' || actStatus === selectedStatus;
+      const matchSearch =
+        searchQuery.trim() === '' ||
+        act.title.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+        act.organizer.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+        (act.criteria_detail && act.criteria_detail.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+
+      return matchStandard && matchStatus && matchSearch;
+    });
+  }, [activities, selectedStandard, selectedStatus, searchQuery]);
+
+  // Thống kê số lượng
+  const approvedCount = activities.filter((a) => (a.status || 'APPROVED') === 'APPROVED').length;
+  const pendingCount = activities.filter((a) => a.status === 'PENDING').length;
 
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
       <div>
-        {/* Header áp dụng Cách 2: Tên trường bên trái - Thẻ tác giả bên phải */}
+        {/* Header chính */}
         <header className="bg-[#001C44] text-white border-b border-[#0C5776] shadow-sm">
-          <div className="max-w-5xl mx-auto px-4 py-8">
-            <div className="flex items-center justify-between gap-4 mb-2">
-              <span className="text-xs font-semibold text-[#BCFEFE] tracking-wider uppercase">
-                Đại học Bách khoa Hà Nội
-              </span>
-              <Link
-                href="/de-xuat"
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#BCFEFE] text-[#001C44] hover:bg-white transition-all shadow-sm"
-              >
-                + Đề xuất hoạt động
-              </Link>
-            </div>
+          <div className="max-w-5xl mx-auto px-4 py-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="inline-block mb-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#BCFEFE] bg-[#0C5776]/60 px-2.5 py-0.5 rounded border border-[#2D99AE]/40">
+                    Đại học Bách khoa Hà Nội
+                  </span>
+                </div>
+                <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-tight">
+                  Nền tảng xét chọn “Sinh viên 5 tốt”
+                </h1>
+                <p className="text-xs text-[#BCFEFE]/80 mt-1">
+                  Theo dõi danh mục hoạt động rèn luyện, tự đánh giá tiêu chí và quản lý hồ sơ tích lũy cá nhân.
+                </p>
+              </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Danh sách hoạt động xét chọn Sinh viên 5 tốt
-            </h1>
-            <p className="text-sm text-[#BCFEFE]/80 mt-2 max-w-2xl leading-relaxed">
-              Năm học 2026 - 2027 | Bảng theo dõi các hoạt động xét chọn danh hiệu.
-            </p>
+              {/* Các nút truy cập nhanh */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/tieu-chi"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/15"
+                >
+                  <BookOpen className="w-4 h-4 text-[#BCFEFE]" />
+                  Bộ tiêu chuẩn SV5T
+                </Link>
+
+                <Link
+                  href="/ho-so"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#BCFEFE] text-[#001C44] text-xs font-bold hover:bg-white transition-all shadow-sm"
+                >
+                  <Sparkles className="w-4 h-4 text-[#0C5776]" />
+                  Hồ sơ cá nhân (MSSV)
+                </Link>
+
+                <Link
+                  href="/de-xuat"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white text-[#001C44] hover:bg-[#BCFEFE] text-xs font-semibold transition-all shadow-sm"
+                >
+                  <PlusCircle className="w-4 h-4 text-[#0C5776]" />
+                  Đề xuất hoạt động
+                </Link>
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Khung nội dung và thanh tab */}
-        <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6">
-          <div className="border-b border-slate-200 bg-white px-3 rounded-t-lg shadow-xs">
-            <nav className="flex space-x-6 overflow-x-auto" aria-label="Tabs">
-              {FILTER_TABS.map((tab) => {
-                const isSelected = activeTab === tab.key;
-                const count = tab.key === 'ALL'
-                  ? activities.length
-                  : activities.filter((a) => a.supported_standard === tab.key).length;
+        {/* Khối giới thiệu 2 nhóm hoạt động */}
+        <div className="max-w-5xl mx-auto px-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <div className="font-bold text-emerald-900">Hoạt động tự động ghi nhận ({approvedCount})</div>
+                <div className="text-emerald-700 mt-0.5 leading-relaxed">
+                  Đã được BTK HSV Đại học phê duyệt trước tiêu chuẩn. Sinh viên tham gia mặc định được công nhận tiêu chí.
+                </div>
+              </div>
+            </div>
 
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`whitespace-nowrap py-3.5 px-1 border-b-2 text-sm transition-all flex items-center gap-2 ${isSelected
-                      ? 'border-[#0C5776] text-[#001C44] font-bold'
-                      : 'border-transparent text-slate-500 hover:text-[#0C5776] hover:border-slate-300'
-                      }`}
-                  >
-                    {tab.label}
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${isSelected
-                        ? 'bg-[#BCFEFE] text-[#001C44]'
-                        : 'bg-slate-100 text-slate-500'
-                        }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
+              <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <div className="font-bold text-amber-900">Hoạt động bên ngoài - Chờ xét ({pendingCount})</div>
+                <div className="text-amber-700 mt-0.5 leading-relaxed">
+                  Đang tổ chức bên ngoài. Sinh viên chủ động tham gia lấy minh chứng; tiêu chí sẽ được BTK rà soát cuối năm.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto px-4 mt-5 space-y-5">
+          {/* Bảng điều khiển tra cứu & Bộ lọc */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
+            {/* Thanh tìm kiếm */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm tên hoạt động, đơn vị tổ chức, nội dung tiêu chuẩn..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-slate-50 focus:bg-white transition-all"
+              />
+            </div>
+
+            {/* Phân loại trạng thái & Tiêu chuẩn */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
+                  <Filter className="w-3.5 h-3.5 text-[#0C5776]" /> Phân loại:
+                </span>
+                <button
+                  onClick={() => setSelectedStatus('ALL')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedStatus === 'ALL'
+                      ? 'bg-[#001C44] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                >
+                  Tất cả ({activities.length})
+                </button>
+                <button
+                  onClick={() => setSelectedStatus('APPROVED')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${selectedStatus === 'APPROVED'
+                      ? 'bg-emerald-700 text-white shadow-xs'
+                      : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                    }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Tự động ghi nhận ({approvedCount})
+                </button>
+                <button
+                  onClick={() => setSelectedStatus('PENDING')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${selectedStatus === 'PENDING'
+                      ? 'bg-amber-700 text-white shadow-xs'
+                      : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                    }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  Chờ xét cuối năm ({pendingCount})
+                </button>
+              </div>
+
+              {/* Dropdown 5 tiêu chuẩn */}
+              <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                <span className="font-semibold text-slate-500">Tiêu chuẩn:</span>
+                <select
+                  value={selectedStandard}
+                  onChange={(e) => setSelectedStandard(e.target.value)}
+                  className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
+                >
+                  <option value="ALL">Toàn bộ 5 tiêu chuẩn</option>
+                  <option value="DAO_DUC">Đạo đức tốt</option>
+                  <option value="HOC_TAP">Học tập tốt</option>
+                  <option value="THE_LUC">Thể lực tốt</option>
+                  <option value="TINH_NGUYEN">Tình nguyện tốt</option>
+                  <option value="HOI_NHAP">Hội nhập tốt</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          {/* Khu vực danh sách thẻ hoạt động */}
-          {loading ? (
-            <div className="py-12 text-center text-sm text-slate-500">
-              Đang tải dữ liệu hoạt động...
+          {/* Danh sách hoạt động */}
+          <div className="space-y-4">
+            <div className="text-xs text-slate-500 flex items-center justify-between px-1">
+              <span>
+                Đang hiển thị: <strong className="text-[#001C44]">{filteredActivities.length}</strong> hoạt động
+              </span>
+              <Link
+                href="/ho-so"
+                className="text-xs text-[#0C5776] hover:underline inline-flex items-center gap-1 font-semibold"
+              >
+                Tra cứu hồ sơ tích lũy cá nhân <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
-          ) : displayedActivities.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
-              Hiện chưa có hoạt động nào trong danh mục này.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {displayedActivities.map((act) => {
-                const standardInfo = CRITERIA_MAP[act.supported_standard] || {
-                  label: act.supported_standard,
-                  badgeStyle: 'bg-slate-100 text-slate-700 border-slate-200',
-                };
-                const deadlineStatus = getDeadlineStatus(act.registration_deadline);
+
+            {loading ? (
+              <div className="py-16 text-center text-xs text-slate-500">Đang tải danh sách hoạt động...</div>
+            ) : filteredActivities.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-xs">
+                Không có hoạt động nào phù hợp với bộ lọc hiện tại.
+              </div>
+            ) : (
+              filteredActivities.map((act) => {
+                const isApproved = (act.status || 'APPROVED') === 'APPROVED';
+                const isPending = act.status === 'PENDING';
+                const isRejected = act.status === 'REJECTED';
 
                 return (
                   <div
                     key={act.id}
-                    className="bg-white border border-slate-200 rounded-xl p-5 hover:border-[#2D99AE] hover:shadow-xs transition-all flex flex-col justify-between"
+                    className={`bg-white border rounded-xl p-5 shadow-xs space-y-3.5 transition-all ${isRejected
+                        ? 'border-rose-200 bg-rose-50/15'
+                        : isPending
+                          ? 'border-amber-200/80 hover:border-amber-300'
+                          : 'border-slate-200 hover:border-[#2D99AE]/60'
+                      }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className={`text-xs px-2.5 py-0.5 rounded-md border font-medium ${standardInfo.badgeStyle}`}>
-                          {standardInfo.label}
+                    {/* Hàng 1: Tiêu chuẩn, Cấp xét & Huy hiệu Trạng thái */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0C5776] text-white">
+                          {CRITERIA_MAP[act.supported_standard] || act.supported_standard}
                         </span>
-                        <div className="flex gap-1.5">
-                          {act.target_levels?.map((lvl) => {
-                            const level = LEVEL_STYLE[lvl] || {
-                              label: lvl,
-                              className: 'bg-slate-100 text-slate-700 border-slate-200',
-                            };
-                            return (
-                              <span
-                                key={lvl}
-                                className={`text-[11px] px-2 py-0.5 rounded border ${level.className}`}
-                              >
-                                {level.label}
-                              </span>
-                            );
-                          })}
+
+                        <div className="flex gap-1">
+                          {act.target_levels?.map((lvl) => (
+                            <span
+                              key={lvl}
+                              className="text-[11px] px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium"
+                            >
+                              {lvl === 'DAI_HOC' ? 'Cấp ĐH' : lvl === 'THANH_PHO' ? 'Cấp TP' : 'Cấp TW'}
+                            </span>
+                          ))}
                         </div>
                       </div>
 
-                      <h2 className="text-base font-bold text-[#001C44] leading-snug">
+                      {/* Badge trạng thái công nhận */}
+                      <div>
+                        {isApproved ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            Tự động ghi nhận
+                          </span>
+                        ) : isPending ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            Chờ xét cuối năm
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-300">
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                            BTK không công nhận
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Hàng 2: Tên hoạt động & Tiêu chí chi tiết */}
+                    <div>
+                      <h2 className={`text-base font-bold ${isRejected ? 'text-rose-900 line-through opacity-80' : 'text-[#001C44]'}`}>
                         {act.title}
                       </h2>
-
-                      {/* Nhãn hạn đăng ký */}
-                      {deadlineStatus && (
-                        <div className="mt-2.5">
-                          <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border ${deadlineStatus.badgeClass}`}>
-                            <Clock className="w-3.5 h-3.5 shrink-0" />
-                            {deadlineStatus.label}
-                          </span>
+                      {act.criteria_detail && (
+                        <div className="mt-2 p-2.5 rounded-lg bg-[#BCFEFE]/15 border border-[#2D99AE]/25 text-xs text-[#001C44] flex items-start gap-2">
+                          <Award className="w-4 h-4 text-[#0C5776] shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold text-[#0C5776]">Tiêu chí tương ứng:</span>{' '}
+                            <span className="text-slate-700">{act.criteria_detail}</span>
+                          </div>
                         </div>
                       )}
+                    </div>
 
-                      <p className="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-2">
-                        {act.content_description}
-                      </p>
-
-                      <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
-                        {(() => {
-                          const startDate = new Date(act.start_date).toLocaleDateString('vi-VN');
-                          const endDate = act.end_date ? new Date(act.end_date).toLocaleDateString('vi-VN') : null;
-
-                          return (
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                              <span>
-                                Thời gian: {startDate}
-                                {endDate && endDate !== startDate && ` → ${endDate}`}
-                              </span>
-                            </div>
-                          );
-                        })()}
+                    {/* Hàng 3: Chi tiết thông tin */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                        <span>Đơn vị tổ chức: <strong>{act.organizer}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                        <span>Thời gian: {formatDateVN(act.start_date)} → {formatDateVN(act.end_date)}</span>
+                      </div>
+                      {act.location && (
                         <div className="flex items-center gap-2">
                           <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
                           <span>Địa điểm: {act.location}</span>
                         </div>
-                        <div className="flex items-start gap-2 text-slate-700">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#2D99AE] shrink-0 mt-0.5" />
-                          <span>Cách thức minh chứng: {act.proof_method}</span>
+                      )}
+                      {act.proof_method && (
+                        <div className="flex items-center gap-2">
+                          <Award className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                          <span>Minh chứng: {act.proof_method}</span>
                         </div>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Khung nút thêm vào Lịch và liên kết bài viết/ đề án */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <a
-                        href={makeGoogleCalendarUrl(act)}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Thêm nhắc hẹn vào Google Lịch trên điện thoại"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#2D99AE]/40 text-[#0C5776] hover:bg-[#BCFEFE]/20 transition-all"
-                      >
-                        <CalendarPlus className="w-3.5 h-3.5 text-[#2D99AE]" />
-                        <span>Thêm vào Lịch</span>
-                      </a>
-
-                      {act.project_url && (
+                    {/* Hàng 4: Liên kết bài viết & Nút lưu hồ sơ */}
+                    <div className="pt-1 flex flex-wrap items-center justify-between gap-3">
+                      {act.project_url ? (
                         <a
                           href={act.project_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-[#0C5776] hover:text-[#001C44] font-semibold"
+                          className="inline-flex items-center gap-1 text-xs text-[#0C5776] hover:text-[#001C44] font-semibold underline"
                         >
-                          Xem bài viết/ đề án chi tiết
+                          Xem chi tiết đề án / bài viết
                           <ExternalLink className="w-3 h-3" />
                         </a>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 italic">Theo thông báo từ đơn vị tổ chức</span>
                       )}
+
+                      <Link
+                        href="/ho-so"
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-[#BCFEFE] text-[#001C44] transition-colors"
+                      >
+                        <span>Ghi nhận vào hồ sơ cá nhân</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Footer áp dụng Cách 1: Ghi nhận bản quyền và đơn vị vận hành */}
+      {/* Footer */}
       <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-1 bg-white">
         <p className="text-slate-400">
           Đại học Bách khoa Hà Nội • Bản quyền © 2026
