@@ -89,6 +89,8 @@ const formatGPA = (val: number) => {
 export default function StudentPortfolioPage() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [loadingAuth, setLoadingAuth] = useState<boolean>(true);
+    const [academicYear, setAcademicYear] = useState<string>('2025-2026');
+    const startYear = academicYear.split('-')[0]; // Tách ra 2025 hoặc 2026
 
     // Form đăng nhập
     const [mssvInput, setMssvInput] = useState('');
