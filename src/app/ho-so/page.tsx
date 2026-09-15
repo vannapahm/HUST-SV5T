@@ -795,16 +795,22 @@ export default function StudentPortfolioPage() {
 
             {/* ==================== MODAL THÔNG TIN HỌC VỤ & BÁO CÁO SV5T ==================== */}
             {isAcademicModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
-                    <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden">
+                <div
+                    onClick={() => setIsAcademicModalOpen(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4"
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden"
+                    >
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white">
                             <div>
                                 <h3 className="text-base font-bold text-[#001C44] flex items-center gap-2">
                                     <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                                    Thông tin học vụ cá nhân (Báo cáo SV5T 2026)
+                                    Báo cáo thành tích cá nhân
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    Điền một lần để hệ thống tự động tính điểm GPA và xuất bản khai thành tích cá nhân.
+                                    Cung cấp dữ liệu cá nhân và học vụ phục vụ lập hồ sơ Sinh viên 5 tốt.
                                 </p>
                             </div>
                             <button
