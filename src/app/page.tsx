@@ -128,8 +128,25 @@ export default function ActivityHub() {
       setLoading(false);
     };
 
+    // 1. Tải dữ liệu ban đầu
     fetchActivities();
 
+    // 2. Tự động đồng bộ lại khi có kết nối mạng trở lại
+    const handleOnline = () => {
+      fetchActivities();
+    };
+
+    // 3. Tự động tải lại khi người dùng quay lại tab trình duyệt này
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchActivities();
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 4. Lắng nghe thay đổi tức thì (Realtime) từ Supabase
     const channel = supabase
       .channel('realtime_activities')
       .on(
@@ -149,7 +166,10 @@ export default function ActivityHub() {
       )
       .subscribe();
 
+    // Dọn dẹp sự kiện và kênh kết nối khi rời trang
     return () => {
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       supabase.removeChannel(channel);
     };
   }, []);
