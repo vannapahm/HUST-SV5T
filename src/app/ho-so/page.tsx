@@ -217,6 +217,30 @@ export default function StudentPortfolioPage() {
         proof_url: '',
     });
 
+    const [exportingDocx, setExportingDocx] = useState(false);
+
+    const handleExportDocx = async () => {
+        if (!academicData.full_name || !academicData.class_name) {
+            alert('Vui lòng bấm vào "Khai báo Báo cáo thành tích" để điền Họ tên và Lớp trước khi xuất file!');
+            setIsAcademicModalOpen(true);
+            return;
+        }
+
+        try {
+            setExportingDocx(true);
+            await generateDocxReport({
+                academicData,
+                records,
+                academicYear,
+                calculatedStats,
+            });
+        } catch (error: any) {
+            alert('Lỗi xuất file Word: ' + error.message);
+        } finally {
+            setExportingDocx(false);
+        }
+    };
+
     useEffect(() => {
         fetchSystemActivities();
         checkAutoLogin();
@@ -680,6 +704,15 @@ export default function StudentPortfolioPage() {
                                     >
                                         <PlusCircle className="w-4 h-4 text-[#0C5776]" />
                                         Thêm hoạt động
+                                    </button>
+
+                                    <button
+                                        onClick={handleExportDocx}
+                                        disabled={exportingDocx}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-all shadow-sm disabled:opacity-50"
+                                    >
+                                        <Download className="w-4 h-4 text-blue-100" />
+                                        <span>{exportingDocx ? 'Đang tạo...' : 'Xuất đơn Word'}</span>
                                     </button>
 
                                     <button
