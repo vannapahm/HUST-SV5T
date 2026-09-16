@@ -21,8 +21,8 @@ interface Proposal {
     project_url: string;
     start_date: string;
     end_date: string;
-    registration_deadline?: string;
-    completion_condition?: string;
+    registration_deadline?: string | null;
+    completion_condition?: string | null;
     location: string;
     target_standard: string;
     target_sub_criterion: string;
@@ -38,17 +38,17 @@ interface Activity {
     organizer: string;
     target_audience?: string;
     content_description?: string;
-    project_url?: string;
+    project_url?: string | null;
     start_date: string;
     end_date: string;
-    registration_deadline?: string;
-    completion_condition?: string;
-    location?: string;
+    registration_deadline?: string | null;
+    completion_condition?: string | null;
+    location?: string | null;
     proof_method?: string;
     supported_standard: string;
     criteria_detail?: string;
     target_levels?: string[];
-    proposal_id?: string;
+    proposal_id?: string | null;
     status?: 'APPROVED' | 'PENDING' | 'REJECTED';
 }
 
@@ -65,6 +65,7 @@ interface StudentActivityItem {
     organizer?: string;
     target_standard: string;
     criteria_detail: string;
+    completion_condition?: string | null;
     participation_date: string;
     proof_url?: string;
     status: 'APPROVED' | 'PENDING' | 'REJECTED';
@@ -93,7 +94,7 @@ const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
 
 const ADMIN_SECRET_KEY = '10012005';
 
-const formatDatetimeLocal = (isoStr?: string) => {
+const formatDatetimeLocal = (isoStr?: string | null) => {
     if (!isoStr) return '';
     const d = new Date(isoStr);
     if (isNaN(d.getTime())) return '';
@@ -101,7 +102,7 @@ const formatDatetimeLocal = (isoStr?: string) => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-const formatDateTimeVN = (dateStr?: string) => {
+const formatDateTimeVN = (dateStr?: string | null) => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
@@ -353,7 +354,6 @@ export default function SummaryPage() {
         setIsEditModalOpen(true);
     };
 
-    // Hàm cập nhật hoạt động: Lưu và làm mới giao diện ngay lập tức
     const handleUpdateActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingActivity) return;
@@ -368,7 +368,8 @@ export default function SummaryPage() {
             }
         }
 
-        const payload = {
+        const payload: Activity = {
+            id: editingActivity.id,
             title: editingActivity.title.trim(),
             organizer: editingActivity.organizer.trim(),
             target_audience: editingActivity.target_audience || 'Toàn thể sinh viên Đại học Bách khoa Hà Nội',
@@ -396,7 +397,6 @@ export default function SummaryPage() {
             return;
         }
 
-        // Đồng bộ tiêu đề và điều kiện sang bảng hồ sơ sinh viên
         await supabase
             .from('student_activities')
             .update({
@@ -407,19 +407,16 @@ export default function SummaryPage() {
             })
             .eq('activity_id', String(editingActivity.id));
 
-        // Cập nhật state trực tiếp lập tức (sử dụng String so sánh id chống lệch kiểu dữ liệu)
         setOfficialActivities((prev) =>
             prev.map((item) =>
                 String(item.id) === String(editingActivity.id)
-                    ? { ...item, ...payload, id: item.id }
+                    ? { ...item, ...payload }
                     : item
             )
         );
 
         setIsEditModalOpen(false);
         setUpdating(false);
-
-        // Tải lại ngầm để đảm bảo khớp 100% với database
         await fetchOfficialActivities();
     };
 
@@ -507,7 +504,6 @@ export default function SummaryPage() {
         return dateStr;
     };
 
-    // Khi duyệt sang APPROVED -> Tự động đưa ra Trang chủ luôn nếu chưa có
     const handleProposalStatusChange = async (proposal: Proposal, newStatus: string) => {
         const { error } = await supabase
             .from('proposals')
@@ -1255,6 +1251,11 @@ export default function SummaryPage() {
 
                                                         <h4 className="text-sm font-bold text-[#001C44]">{act.activity_title}</h4>
                                                         <p className="text-slate-600"><strong>Tiêu chí:</strong> {act.criteria_detail}</p>
+                                                        {act.completion_condition && (
+                                                            <p className="text-xs text-amber-800 bg-amber-50/80 border border-amber-200 px-2 py-1 rounded-md inline-block">
+                                                                <strong>Yêu cầu hoàn thành:</strong> {act.completion_condition}
+                                                            </p>
+                                                        )}
                                                         {act.organizer && <p className="text-slate-500">Đơn vị: {act.organizer}</p>}
                                                         {act.proof_url && (
                                                             <a href={act.proof_url} target="_blank" rel="noreferrer" className="text-[#0C5776] underline inline-flex items-center gap-1 pt-1 font-medium">
