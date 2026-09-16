@@ -93,6 +93,15 @@ const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
 
 const ADMIN_SECRET_KEY = '10012005';
 
+// Chuyển đổi chuỗi ISO sang định dạng YYYY-MM-DDTHH:mm cho input datetime-local theo giờ địa phương
+const formatDatetimeLocal = (isoStr?: string) => {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 export default function SummaryPage() {
     const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -1370,7 +1379,7 @@ export default function SummaryPage() {
                                         type="datetime-local"
                                         value={officialForm.registration_deadline}
                                         onChange={(e) => setOfficialForm({ ...officialForm, registration_deadline: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs bg-white"
                                     />
                                 </div>
 
@@ -1388,6 +1397,17 @@ export default function SummaryPage() {
                                     <p className="text-[11px] text-slate-400 mt-1">
                                         * Quy định cụ thể của BTC để được tính tiêu chí (hiển thị công khai cho sinh viên trên Trang chủ).
                                     </p>
+                                </div>
+
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Địa điểm tổ chức</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Địa điểm trực tiếp hoặc ghi rõ 'Trực tuyến'..."
+                                        value={officialForm.location}
+                                        onChange={(e) => setOfficialForm({ ...officialForm, location: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
+                                    />
                                 </div>
 
                                 <div>
@@ -1589,17 +1609,9 @@ export default function SummaryPage() {
                                     <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (ngày & giờ)</label>
                                     <input
                                         type="datetime-local"
-                                        value={
-                                            editingActivity.registration_deadline
-                                                ? (() => {
-                                                    const d = new Date(editingActivity.registration_deadline);
-                                                    const pad = (n: number) => String(n).padStart(2, '0');
-                                                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                                                })()
-                                                : ''
-                                        }
+                                        value={formatDatetimeLocal(editingActivity.registration_deadline)}
                                         onChange={(e) => setEditingActivity({ ...editingActivity, registration_deadline: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs bg-white"
                                     />
                                 </div>
 
@@ -1613,6 +1625,17 @@ export default function SummaryPage() {
                                         value={editingActivity.completion_condition || ''}
                                         onChange={(e) => setEditingActivity({ ...editingActivity, completion_condition: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#0C5776] bg-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Địa điểm tổ chức</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Địa điểm trực tiếp hoặc ghi rõ 'Trực tuyến'..."
+                                        value={editingActivity.location || ''}
+                                        onChange={(e) => setEditingActivity({ ...editingActivity, location: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
                                     />
                                 </div>
 
