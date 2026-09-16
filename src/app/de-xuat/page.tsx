@@ -364,6 +364,7 @@ export default function ProposalPage() {
                                 </h3>
 
                                 <div className="space-y-4">
+                                    {/* 1. Tiêu chuẩn */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Tiêu chuẩn <span className="text-red-500">*</span>
@@ -381,6 +382,7 @@ export default function ProposalPage() {
                                         </select>
                                     </div>
 
+                                    {/* 2. Tiêu chí cụ thể & Khung hiển thị nội dung */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Tiêu chí cụ thể <span className="text-red-500">*</span>
@@ -409,6 +411,7 @@ export default function ProposalPage() {
                                         )}
                                     </div>
 
+                                    {/* 3. Điều kiện hoàn thành / ghi nhận tiêu chí */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Điều kiện hoàn thành / ghi nhận tiêu chí (nếu có)
@@ -420,8 +423,12 @@ export default function ProposalPage() {
                                             onChange={(e) => setFormData({ ...formData, completion_condition: e.target.value })}
                                             className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
                                         />
+                                        <p className="text-[11px] text-slate-400 mt-1">
+                                            * Quy định cụ thể của BTC để được tính tiêu chí (giúp Quản trị viên duyệt đề xuất chính xác hơn).
+                                        </p>
                                     </div>
 
+                                    {/* 4. Cấp xét dự kiến phù hợp */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1.5">
                                             Cấp xét dự kiến phù hợp:
