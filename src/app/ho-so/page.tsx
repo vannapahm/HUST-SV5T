@@ -1475,7 +1475,7 @@ export default function StudentPortfolioPage() {
                                                 <input
                                                     type="text"
                                                     required
-                                                    placeholder="anh.ptv233017"
+                                                    placeholder="Anh.PTV233017"
                                                     value={academicData.email_sis.replace(/@sis\.hust\.edu\.vn$/i, '')}
                                                     onChange={(e) => {
                                                         const prefix = e.target.value.trim().replace(/@sis\.hust\.edu\.vn$/i, '');
