@@ -43,8 +43,12 @@ const getAcademicYearFromDate = (dateStr?: string): string => {
   const parts = cleanDate.split('-');
   if (parts.length < 3) return '';
   const year = parseInt(parts[0], 10);
-  const md = `${parts[1]}-${parts[2]}`;
-  return md >= '09-15' ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+
+  // Từ 15/09 trở đi tính cho năm học mới (year -> year + 1)
+  const isAfterSep15 = month > 9 || (month === 9 && day >= 15);
+  return isAfterSep15 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
 };
 
 export default function HomePage() {
