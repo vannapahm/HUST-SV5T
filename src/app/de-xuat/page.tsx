@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { ArrowLeft, Send, CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle2, AlertCircle, RotateCcw, Lock, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from '@/data/criteria';
 
@@ -32,28 +32,76 @@ export default function ProposalPage() {
     const [success, setSuccess] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+    const [isStudentLoggedIn, setIsStudentLoggedIn] = useState(false);
 
     const [formData, setFormData] = useState(INITIAL_FORM);
 
-    // 1. Tự động khôi phục dữ liệu đã lưu khi mở trang hoặc sau khi reload
+    // 1. Tự động kiểm tra phiên đăng nhập hồ sơ cá nhân và phục hồi bản nháp
     useEffect(() => {
-        try {
-            const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
-            if (savedDraft) {
-                const parsed = JSON.parse(savedDraft);
-                setFormData((prev) => ({
-                    ...prev,
-                    ...parsed,
-                }));
+        const loadSessionAndDraft = async () => {
+            let sessionMssv = '';
+            let sessionName = '';
+            let loggedIn = false;
+
+            // Kiểm tra session đăng nhập từ /ho-so
+            try {
+                const savedSession = localStorage.getItem('sv5t_student_session');
+                if (savedSession) {
+                    const { mssv } = JSON.parse(savedSession);
+                    if (mssv) {
+                        sessionMssv = mssv;
+                        loggedIn = true;
+
+                        // Truy vấn họ và tên từ thông tin học vụ của sinh viên
+                        const { data } = await supabase
+                            .from('student_academic_info')
+                            .select('full_name')
+                            .eq('student_id', mssv)
+                            .maybeSingle();
+
+                        if (data && data.full_name) {
+                            sessionName = data.full_name;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Lỗi khi đọc session sinh viên:', e);
             }
-        } catch (e) {
-            console.error('Không thể tải bản nháp:', e);
-        } finally {
-            setIsDraftLoaded(true);
-        }
+
+            setIsStudentLoggedIn(loggedIn);
+
+            // Nạp dữ liệu bản nháp từ localStorage (nếu có)
+            try {
+                const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+                if (savedDraft) {
+                    const parsed = JSON.parse(savedDraft);
+                    setFormData((prev) => ({
+                        ...prev,
+                        ...parsed,
+                        // Ưu tiên thông tin định danh từ tài khoản đã đăng nhập
+                        ...(loggedIn ? {
+                            student_id: sessionMssv,
+                            student_name: sessionName || parsed.student_name || '',
+                        } : {}),
+                    }));
+                } else if (loggedIn) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        student_id: sessionMssv,
+                        student_name: sessionName,
+                    }));
+                }
+            } catch (e) {
+                console.error('Không thể nạp bản nháp:', e);
+            } finally {
+                setIsDraftLoaded(true);
+            }
+        };
+
+        loadSessionAndDraft();
     }, []);
 
-    // 2. Tự động lưu dữ liệu vào localStorage mỗi khi người dùng gõ
+    // 2. Tự động lưu bản nháp theo thời gian thực mỗi khi nhập liệu
     useEffect(() => {
         if (isDraftLoaded && !success) {
             localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
@@ -81,11 +129,16 @@ export default function ProposalPage() {
         });
     };
 
-    // Xóa trắng form khi người dùng muốn nhập lại từ đầu
     const handleResetForm = () => {
-        if (confirm('Bạn có chắc chắn muốn xóa toàn bộ nội dung đang nhập dở để điền lại từ đầu?')) {
+        if (confirm('Bạn có chắc chắn muốn xóa nội dung đang soạn để nhập lại từ đầu?')) {
             localStorage.removeItem(DRAFT_STORAGE_KEY);
-            setFormData(INITIAL_FORM);
+            setFormData({
+                ...INITIAL_FORM,
+                ...(isStudentLoggedIn ? {
+                    student_id: formData.student_id,
+                    student_name: formData.student_name,
+                } : {}),
+            });
         }
     };
 
@@ -122,7 +175,6 @@ export default function ProposalPage() {
             console.error('Lỗi Supabase:', error);
             setErrorMessage(error.message);
         } else {
-            // Xóa bản nháp đã lưu sau khi gửi thành công
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             setSuccess(true);
         }
@@ -180,7 +232,13 @@ export default function ProposalPage() {
                                     onClick={() => {
                                         setSuccess(false);
                                         localStorage.removeItem(DRAFT_STORAGE_KEY);
-                                        setFormData(INITIAL_FORM);
+                                        setFormData({
+                                            ...INITIAL_FORM,
+                                            ...(isStudentLoggedIn ? {
+                                                student_id: formData.student_id,
+                                                student_name: formData.student_name,
+                                            } : {}),
+                                        });
                                     }}
                                     className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#0C5776] text-white hover:bg-[#001C44] transition-colors"
                                 >
@@ -204,35 +262,63 @@ export default function ProposalPage() {
 
                             {/* Nhóm 1: Thông tin sinh viên */}
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#0C5776] border-b border-slate-100 pb-2 mb-3">
-                                    1. Thông tin sinh viên đề xuất
-                                </h3>
+                                <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-2 mb-3 gap-2">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#0C5776]">
+                                        1. Thông tin sinh viên đề xuất
+                                    </h3>
+                                    {isStudentLoggedIn && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <ShieldCheck className="w-3.5 h-3.5" />
+                                            Đã xác thực từ Hồ sơ cá nhân
+                                        </span>
+                                    )}
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Họ và tên <span className="text-red-500">*</span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="Ví dụ: Phạm Thị Vân Anh"
-                                            value={formData.student_name}
-                                            onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
-                                            className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Ví dụ: Phạm Thị Vân Anh"
+                                                value={formData.student_name}
+                                                readOnly={isStudentLoggedIn && !!formData.student_name}
+                                                onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
+                                                className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none transition-all ${isStudentLoggedIn && !!formData.student_name
+                                                        ? 'bg-slate-100 text-slate-600 font-semibold border-slate-200 cursor-not-allowed pr-8'
+                                                        : 'border-slate-300 focus:border-[#0C5776] bg-white'
+                                                    }`}
+                                            />
+                                            {isStudentLoggedIn && !!formData.student_name && (
+                                                <Lock className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                                            )}
+                                        </div>
                                     </div>
+
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Mã số sinh viên (MSSV) <span className="text-red-500">*</span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="Ví dụ: 20230000"
-                                            value={formData.student_id}
-                                            onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
-                                            className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Ví dụ: 20230000"
+                                                value={formData.student_id}
+                                                readOnly={isStudentLoggedIn}
+                                                onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                                                className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none transition-all ${isStudentLoggedIn
+                                                        ? 'bg-slate-100 text-slate-600 font-bold border-slate-200 cursor-not-allowed pr-8'
+                                                        : 'border-slate-300 focus:border-[#0C5776] bg-white'
+                                                    }`}
+                                            />
+                                            {isStudentLoggedIn && (
+                                                <Lock className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -268,7 +354,7 @@ export default function ProposalPage() {
                                                 placeholder="Tên đơn vị, đoàn thể hoặc ban tổ chức"
                                                 value={formData.organizer}
                                                 onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
                                             />
                                         </div>
                                         <div>
@@ -281,7 +367,7 @@ export default function ProposalPage() {
                                                 placeholder="Ví dụ: Toàn thể sinh viên, đoàn viên thanh niên..."
                                                 value={formData.target_audience}
                                                 onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
                                             />
                                         </div>
                                     </div>
@@ -364,7 +450,6 @@ export default function ProposalPage() {
                                 </h3>
 
                                 <div className="space-y-4">
-                                    {/* 1. Tiêu chuẩn */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Tiêu chuẩn <span className="text-red-500">*</span>
@@ -382,7 +467,6 @@ export default function ProposalPage() {
                                         </select>
                                     </div>
 
-                                    {/* 2. Tiêu chí cụ thể & Khung hiển thị nội dung */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Tiêu chí cụ thể <span className="text-red-500">*</span>
@@ -411,7 +495,6 @@ export default function ProposalPage() {
                                         )}
                                     </div>
 
-                                    {/* 3. Điều kiện hoàn thành / ghi nhận tiêu chí */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             Điều kiện hoàn thành / ghi nhận tiêu chí (nếu có)
@@ -428,7 +511,6 @@ export default function ProposalPage() {
                                         </p>
                                     </div>
 
-                                    {/* 4. Cấp xét dự kiến phù hợp */}
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1.5">
                                             Cấp xét dự kiến phù hợp:
