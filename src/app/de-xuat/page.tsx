@@ -1,34 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { ArrowLeft, Send, CheckCircle2, AlertCircle, ListFilter } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from '@/data/criteria';
+
+const DRAFT_STORAGE_KEY = 'sv5t_proposal_form_draft';
+
+const INITIAL_FORM = {
+    student_name: '',
+    student_id: '',
+    activity_title: '',
+    organizer: '',
+    target_audience: '',
+    project_url: '',
+    start_date: '',
+    end_date: '',
+    registration_deadline: '',
+    completion_condition: '',
+    location: '',
+    standard: 'DAO_DUC',
+    sub_criterion: CRITERIA_TREE['DAO_DUC']?.items[0]?.full || '',
+    levels: ['DAI_HOC'] as string[],
+    proof_method: '',
+    note: '',
+};
 
 export default function ProposalPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
-    const [formData, setFormData] = useState({
-        student_name: '',
-        student_id: '',
-        activity_title: '',
-        organizer: '',
-        target_audience: '',
-        project_url: '',
-        start_date: '',
-        end_date: '',
-        registration_deadline: '',
-        completion_condition: '',
-        location: '',
-        standard: 'DAO_DUC',
-        sub_criterion: CRITERIA_TREE['DAO_DUC'].items[0].full,
-        levels: ['DAI_HOC'] as string[],
-        proof_method: '',
-        note: '',
-    });
+    const [formData, setFormData] = useState(INITIAL_FORM);
+
+    // 1. Tự động khôi phục dữ liệu đã lưu khi mở trang hoặc sau khi reload
+    useEffect(() => {
+        try {
+            const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (savedDraft) {
+                const parsed = JSON.parse(savedDraft);
+                setFormData((prev) => ({
+                    ...prev,
+                    ...parsed,
+                }));
+            }
+        } catch (e) {
+            console.error('Không thể tải bản nháp:', e);
+        } finally {
+            setIsDraftLoaded(true);
+        }
+    }, []);
+
+    // 2. Tự động lưu dữ liệu vào localStorage mỗi khi người dùng gõ
+    useEffect(() => {
+        if (isDraftLoaded && !success) {
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
+        }
+    }, [formData, isDraftLoaded, success]);
 
     const handleStandardChange = (stdKey: string) => {
         const firstItem = CRITERIA_TREE[stdKey]?.items[0]?.full || '';
@@ -51,39 +81,49 @@ export default function ProposalPage() {
         });
     };
 
+    // Xóa trắng form khi người dùng muốn nhập lại từ đầu
+    const handleResetForm = () => {
+        if (confirm('Bạn có chắc chắn muốn xóa toàn bộ nội dung đang nhập dở để điền lại từ đầu?')) {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            setFormData(INITIAL_FORM);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setErrorMessage('');
 
-        const { error } = await supabase.from('proposals').insert([
-            {
-                student_name: formData.student_name,
-                student_id: formData.student_id,
-                activity_title: formData.activity_title,
-                organizer: formData.organizer,
-                target_audience: formData.target_audience,
-                project_url: formData.project_url,
-                start_date: formData.start_date,
-                end_date: formData.end_date,
-                registration_deadline: formData.registration_deadline || null,
-                completion_condition: formData.completion_condition || null, // <-- THÊM DÒNG NÀY
-                location: formData.location,
-                target_standard: formData.standard,
-                target_sub_criterion: formData.sub_criterion,
-                target_levels: formData.levels,
-                proof_method: formData.proof_method,
-                note: formData.note,
-                status: 'PENDING',
-            },
-        ]);
+        const payload = {
+            student_name: formData.student_name,
+            student_id: formData.student_id,
+            activity_title: formData.activity_title,
+            organizer: formData.organizer,
+            target_audience: formData.target_audience,
+            project_url: formData.project_url,
+            start_date: formData.start_date,
+            end_date: formData.end_date,
+            registration_deadline: formData.registration_deadline || null,
+            completion_condition: formData.completion_condition || null,
+            location: formData.location,
+            target_standard: formData.standard,
+            target_sub_criterion: formData.sub_criterion,
+            target_levels: formData.levels,
+            proof_method: formData.proof_method,
+            note: formData.note,
+            status: 'PENDING',
+        };
+
+        const { error } = await supabase.from('proposals').insert([payload]);
 
         setLoading(false);
 
         if (error) {
             console.error('Lỗi Supabase:', error);
-            setErrorMessage(error.message); // Hiện lỗi thực tế từ hệ thống
+            setErrorMessage(error.message);
         } else {
+            // Xóa bản nháp đã lưu sau khi gửi thành công
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
             setSuccess(true);
         }
     };
@@ -120,7 +160,7 @@ export default function ProposalPage() {
                                 Đối với tiêu chuẩn <strong>Học tập tốt</strong>: Danh sách các CLB học thuật sẽ được Hội Sinh viên Đại học công bố sau, sinh viên không đề xuất hoạt động hỗ trợ tiêu chí này.
                             </li>
                             <li>
-                                Đối với tiêu chuẩn <strong>Thể lực tốt</strong>: Tiêu chí “Thành viên đội tuyển thể thao cấp Đại học trở lên” yêu cầu có giấy xác nhận của giáo viên quản lý đội tuyển theo mẫu, sinh viên không đề xuất hoạt động hỗ trợ tiêu chí này.
+                                Đối với tiêu chuẩn <strong>Thể lực tốt</strong>: Tiêu chí "Thành viên đội tuyển thể thao cấp Đại học trở lên" yêu cầu có giấy xác nhận của giáo viên quản lý đội tuyển theo mẫu, sinh viên không đề xuất hoạt động hỗ trợ tiêu chí này.
                             </li>
                             <li>
                                 Đối với tiêu chuẩn <strong>Thể lực tốt</strong>: Danh sách các CLB thể thao sẽ được Hội Sinh viên Đại học công bố sau, sinh viên không đề xuất hoạt động hỗ trợ tiêu chí này.
@@ -139,24 +179,8 @@ export default function ProposalPage() {
                                 <button
                                     onClick={() => {
                                         setSuccess(false);
-                                        setFormData({
-                                            student_name: '',
-                                            student_id: '',
-                                            activity_title: '',
-                                            organizer: '',
-                                            target_audience: '',
-                                            project_url: '',
-                                            start_date: '',
-                                            end_date: '',
-                                            registration_deadline: '',
-                                            completion_condition: '', // <-- THÊM DÒNG NÀY
-                                            location: '',
-                                            standard: 'DAO_DUC',
-                                            sub_criterion: CRITERIA_TREE['DAO_DUC'].items[0].full,
-                                            levels: ['DAI_HOC'],
-                                            proof_method: '',
-                                            note: '',
-                                        });
+                                        localStorage.removeItem(DRAFT_STORAGE_KEY);
+                                        setFormData(INITIAL_FORM);
                                     }}
                                     className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#0C5776] text-white hover:bg-[#001C44] transition-colors"
                                 >
@@ -173,7 +197,7 @@ export default function ProposalPage() {
                     ) : (
                         <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-6 space-y-6 shadow-xs">
                             {errorMessage && (
-                                <div className="p-3 bg-[#F8DAD0] text-[#001C44] text-xs rounded-lg">
+                                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg font-medium">
                                     {errorMessage}
                                 </div>
                             )}
@@ -319,7 +343,7 @@ export default function ProposalPage() {
 
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
-                                            Nội dung hoạt động (Link đề án hoặc bài viết giới thiệu về nội dung hoạt động) <span className="text-red-500">*</span>
+                                            Nội dung hoạt động (Link đề án hoặc bài viết giới thiệu) <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="url"
@@ -373,23 +397,6 @@ export default function ProposalPage() {
                                             ))}
                                         </select>
 
-                                        <div>
-                                            <label className="block text-xs font-medium text-slate-700 mb-1">
-                                                Điều kiện hoàn thành / ghi nhận tiêu chí (nếu có)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                placeholder="Ví dụ: Đạt từ 38/40 điểm trở lên; Hoàn thành tối thiểu 5 chặng..."
-                                                value={formData.completion_condition}
-                                                onChange={(e) => setFormData({ ...formData, completion_condition: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
-                                            />
-                                            <p className="text-[11px] text-slate-400 mt-1">
-                                                * Quy định cụ thể của BTC để được tính tiêu chí (giúp Quản trị viên duyệt đề xuất chính xác hơn).
-                                            </p>
-                                        </div>
-
-                                        {/* Khung hiển thị trọn vẹn văn bản gốc */}
                                         {formData.sub_criterion && (
                                             <div className="mt-2.5 p-3 rounded-lg bg-[#BCFEFE]/20 border border-[#2D99AE]/30 text-xs text-[#001C44] leading-relaxed">
                                                 <span className="font-semibold text-[#0C5776] block mb-1">
@@ -400,6 +407,19 @@ export default function ProposalPage() {
                                                 </p>
                                             </div>
                                         )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-700 mb-1">
+                                            Điều kiện hoàn thành / ghi nhận tiêu chí (nếu có)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ví dụ: Đạt từ 38/40 điểm trở lên; Hoàn thành tối thiểu 5 chặng..."
+                                            value={formData.completion_condition}
+                                            onChange={(e) => setFormData({ ...formData, completion_condition: e.target.value })}
+                                            className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
+                                        />
                                     </div>
 
                                     <div>
@@ -461,11 +481,20 @@ export default function ProposalPage() {
                                 </div>
                             </div>
 
-                            <div className="pt-2 border-t border-slate-100 flex justify-end">
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <button
+                                    type="button"
+                                    onClick={handleResetForm}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <span>Xóa bản nháp</span>
+                                </button>
+
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0C5776] text-white text-xs font-semibold hover:bg-[#001C44] transition-colors disabled:opacity-50"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0C5776] text-white text-xs font-semibold hover:bg-[#001C44] transition-colors disabled:opacity-50 shadow-sm"
                                 >
                                     <Send className="w-3.5 h-3.5" />
                                     {loading ? 'Đang gửi...' : 'Gửi đề xuất hoạt động'}
