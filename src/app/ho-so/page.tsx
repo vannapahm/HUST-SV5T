@@ -19,6 +19,7 @@ interface StudentRecord {
     organizer?: string;
     target_standard: string;
     criteria_detail: string;
+    completion_condition?: string;
     participation_date: string;
     proof_url?: string;
     status: 'APPROVED' | 'PENDING' | 'REJECTED';
@@ -145,6 +146,7 @@ export default function StudentPortfolioPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [addMode, setAddMode] = useState<'SYSTEM' | 'CUSTOM'>('SYSTEM');
     const [selectedSystemActId, setSelectedSystemActId] = useState<string>('');
+    const [systemProofUrl, setSystemProofUrl] = useState<string>('');
 
     const [customForm, setCustomForm] = useState({
         activity_title: '',
@@ -433,8 +435,9 @@ export default function StudentPortfolioPage() {
                 organizer: act.organizer,
                 target_standard: act.supported_standard,
                 criteria_detail: act.criteria_detail || 'Tham gia hoạt động được công nhận',
+                completion_condition: act.completion_condition || null, // <-- Lưu điều kiện vào hồ sơ
                 participation_date: act.start_date ? act.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
-                proof_url: '',
+                proof_url: systemProofUrl.trim() || '', // <-- Lưu link minh chứng của sinh viên
                 status: act.status || 'APPROVED',
             };
         } else {
@@ -788,6 +791,13 @@ export default function StudentPortfolioPage() {
                                                 <p className="text-xs text-slate-600">
                                                     <strong>Tiêu chí:</strong> {r.criteria_detail}
                                                 </p>
+
+                                                {/* Hiển thị điều kiện ghi nhận nếu có */}
+                                                {r.completion_condition && (
+                                                    <p className="text-xs text-amber-800 bg-amber-50/80 border border-amber-200 px-2 py-1 rounded-md inline-block">
+                                                        <strong>Yêu cầu hoàn thành:</strong> {r.completion_condition}
+                                                    </p>
+                                                )}
 
                                                 {r.organizer && (
                                                     <p className="text-xs text-slate-500">Đơn vị tổ chức: {r.organizer}</p>
@@ -1300,7 +1310,7 @@ export default function StudentPortfolioPage() {
 
                         <form onSubmit={handleAddActivity} className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700">
                             {addMode === 'SYSTEM' ? (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Chọn hoạt động bạn đã tham gia *</label>
                                         <select
@@ -1318,27 +1328,37 @@ export default function StudentPortfolioPage() {
                                         </select>
                                     </div>
 
-                                    {/* Hiển thị điều kiện ghi nhận của hoạt động đang được chọn */}
+                                    {/* Nhắc nhở điều kiện nếu hoạt động có quy định mốc điểm/kết quả */}
                                     {(() => {
                                         const act = systemActivities.find((a) => String(a.id) === selectedSystemActId);
                                         if (!act || !act.completion_condition) return null;
                                         return (
-                                            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2 animate-in fade-in duration-150">
+                                            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
                                                 <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                                <div className="leading-relaxed">
+                                                <div>
                                                     <span className="font-semibold text-amber-800">Yêu cầu hoàn thành:</span>{' '}
                                                     <span className="font-medium text-slate-700">{act.completion_condition}</span>
                                                     <p className="text-[11px] text-amber-700/80 mt-0.5">
-                                                        * Hãy chắc chắn kết quả tham gia của bạn đạt tiêu chí trên trước khi lưu vào hồ sơ.
+                                                        Hãy đính kèm ảnh chụp điểm số / giấy chứng nhận đạt điều kiện ở ô bên dưới.
                                                     </p>
                                                 </div>
                                             </div>
                                         );
                                     })()}
 
-                                    <p className="text-[11px] text-slate-400 mt-1">
-                                        * Khi hoạt động trên hệ thống có cập nhật trạng thái duyệt, hồ sơ của bạn sẽ tự động đồng bộ theo.
-                                    </p>
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Link ảnh / minh chứng kết quả (nếu có)</label>
+                                        <input
+                                            type="url"
+                                            placeholder="https://drive.google.com/... (ảnh chụp điểm số, giấy chứng nhận)"
+                                            value={systemProofUrl}
+                                            onChange={(e) => setSystemProofUrl(e.target.value)}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
+                                        />
+                                        <p className="text-[11px] text-slate-400 mt-1">
+                                            * Dùng để lưu trữ minh chứng khi xuất đơn Báo cáo thành tích cuối năm.
+                                        </p>
+                                    </div>
                                 </div>
                             ) : (
                                 <>
