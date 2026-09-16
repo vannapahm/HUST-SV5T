@@ -21,6 +21,7 @@ export default function ProposalPage() {
         start_date: '',
         end_date: '',
         registration_deadline: '',
+        completion_condition: '',
         location: '',
         standard: 'DAO_DUC',
         sub_criterion: CRITERIA_TREE['DAO_DUC'].items[0].full,
@@ -66,6 +67,7 @@ export default function ProposalPage() {
                 start_date: formData.start_date,
                 end_date: formData.end_date,
                 registration_deadline: formData.registration_deadline || null,
+                completion_condition: formData.completion_condition || null, // <-- THÊM DÒNG NÀY
                 location: formData.location,
                 target_standard: formData.standard,
                 target_sub_criterion: formData.sub_criterion,
@@ -147,6 +149,7 @@ export default function ProposalPage() {
                                             start_date: '',
                                             end_date: '',
                                             registration_deadline: '',
+                                            completion_condition: '', // <-- THÊM DÒNG NÀY
                                             location: '',
                                             standard: 'DAO_DUC',
                                             sub_criterion: CRITERIA_TREE['DAO_DUC'].items[0].full,
@@ -369,6 +372,22 @@ export default function ProposalPage() {
                                                 </option>
                                             ))}
                                         </select>
+
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-700 mb-1">
+                                                Điều kiện hoàn thành / ghi nhận tiêu chí (nếu có)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Ví dụ: Đạt từ 38/40 điểm trở lên; Hoàn thành tối thiểu 5 chặng..."
+                                                value={formData.completion_condition}
+                                                onChange={(e) => setFormData({ ...formData, completion_condition: e.target.value })}
+                                                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
+                                            />
+                                            <p className="text-[11px] text-slate-400 mt-1">
+                                                * Quy định cụ thể của BTC để được tính tiêu chí (giúp Quản trị viên duyệt đề xuất chính xác hơn).
+                                            </p>
+                                        </div>
 
                                         {/* Khung hiển thị trọn vẹn văn bản gốc */}
                                         {formData.sub_criterion && (
