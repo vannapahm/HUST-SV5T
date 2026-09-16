@@ -36,17 +36,17 @@ interface Activity {
     id: string | number;
     title: string;
     organizer: string;
-    target_audience?: string;
-    content_description?: string;
+    target_audience?: string | null;
+    content_description?: string | null;
     project_url?: string | null;
     start_date: string;
     end_date: string;
     registration_deadline?: string | null;
     completion_condition?: string | null;
     location?: string | null;
-    proof_method?: string;
+    proof_method?: string | null;
     supported_standard: string;
-    criteria_detail?: string;
+    criteria_detail?: string | null;
     target_levels?: string[];
     proposal_id?: string | null;
     status?: 'APPROVED' | 'PENDING' | 'REJECTED';
@@ -189,7 +189,7 @@ export default function SummaryPage() {
             .select('*')
             .order('start_date', { ascending: false });
 
-        if (!error && data) setOfficialActivities(data);
+        if (!error && data) setOfficialActivities(data as Activity[]);
     };
 
     const fetchStudentsData = async () => {
@@ -279,7 +279,9 @@ export default function SummaryPage() {
             .update({ status: newStatus })
             .eq('activity_id', String(act.id));
 
-        await fetchOfficialActivities();
+        setOfficialActivities((prev) =>
+            prev.map((item) => (String(item.id) === String(act.id) ? { ...item, status: newStatus } : item))
+        );
 
         setAllStudentActivities((prev) =>
             prev.map((item) => item.activity_title === act.title ? { ...item, status: newStatus } : item)
@@ -301,32 +303,34 @@ export default function SummaryPage() {
 
         setCreating(true);
 
-        const { error } = await supabase.from('activities').insert([
-            {
-                title: officialForm.title.trim(),
-                organizer: officialForm.organizer.trim(),
-                target_audience: officialForm.target_audience,
-                content_description: officialForm.content_description || 'Hoạt động hỗ trợ tiêu chuẩn Sinh viên 5 tốt.',
-                project_url: officialForm.project_url?.trim() || null,
-                start_date: officialForm.start_date,
-                end_date: officialForm.end_date || officialForm.start_date,
-                registration_deadline: officialForm.registration_deadline ? new Date(officialForm.registration_deadline).toISOString() : null,
-                completion_condition: officialForm.completion_condition?.trim() || null,
-                location: officialForm.location?.trim() || null,
-                proof_method: officialForm.proof_method.trim(),
-                supported_standard: officialForm.target_standard,
-                criteria_detail: officialForm.criteria_detail,
-                target_levels: officialForm.target_levels,
-                status: officialForm.status,
-            },
-        ]);
+        const newRow = {
+            title: officialForm.title.trim(),
+            organizer: officialForm.organizer.trim(),
+            target_audience: officialForm.target_audience,
+            content_description: officialForm.content_description || 'Hoạt động hỗ trợ tiêu chuẩn Sinh viên 5 tốt.',
+            project_url: officialForm.project_url?.trim() || null,
+            start_date: officialForm.start_date,
+            end_date: officialForm.end_date || officialForm.start_date,
+            registration_deadline: officialForm.registration_deadline ? new Date(officialForm.registration_deadline).toISOString() : null,
+            completion_condition: officialForm.completion_condition?.trim() || null,
+            location: officialForm.location?.trim() || null,
+            proof_method: officialForm.proof_method.trim(),
+            supported_standard: officialForm.target_standard,
+            criteria_detail: officialForm.criteria_detail,
+            target_levels: officialForm.target_levels,
+            status: officialForm.status,
+        };
+
+        const { data, error } = await supabase.from('activities').insert([newRow]).select();
 
         setCreating(false);
 
         if (error) {
             alert('Lỗi khi thêm hoạt động: ' + error.message);
         } else {
-            alert('Đã đăng hoạt động lên hệ thống thành công!');
+            if (data && data.length > 0) {
+                setOfficialActivities((prev) => [data[0] as Activity, ...prev]);
+            }
             setIsAddModalOpen(false);
             setOfficialForm({
                 title: '',
@@ -354,6 +358,7 @@ export default function SummaryPage() {
         setIsEditModalOpen(true);
     };
 
+    // Hàm cập nhật hoạt động: Lưu và đổi ngay lập tức trên màn hình
     const handleUpdateActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingActivity) return;
@@ -368,8 +373,7 @@ export default function SummaryPage() {
             }
         }
 
-        const payload: Activity = {
-            id: editingActivity.id,
+        const updatePayload = {
             title: editingActivity.title.trim(),
             organizer: editingActivity.organizer.trim(),
             target_audience: editingActivity.target_audience || 'Toàn thể sinh viên Đại học Bách khoa Hà Nội',
@@ -386,10 +390,11 @@ export default function SummaryPage() {
             status: editingActivity.status || 'APPROVED',
         };
 
-        const { error } = await supabase
+        const { data: updatedRows, error } = await supabase
             .from('activities')
-            .update(payload)
-            .eq('id', editingActivity.id);
+            .update(updatePayload)
+            .eq('id', editingActivity.id)
+            .select();
 
         if (error) {
             setUpdating(false);
@@ -397,27 +402,32 @@ export default function SummaryPage() {
             return;
         }
 
-        await supabase
-            .from('student_activities')
-            .update({
-                activity_title: payload.title,
-                criteria_detail: payload.criteria_detail,
-                completion_condition: payload.completion_condition,
-                status: payload.status,
-            })
-            .eq('activity_id', String(editingActivity.id));
+        // Lấy dữ liệu vừa cập nhật để thay thế tức thì trên state (chống lệch kiểu number/string)
+        const updatedItem: Activity = updatedRows && updatedRows.length > 0
+            ? (updatedRows[0] as Activity)
+            : { ...editingActivity, ...updatePayload };
 
         setOfficialActivities((prev) =>
             prev.map((item) =>
                 String(item.id) === String(editingActivity.id)
-                    ? { ...item, ...payload }
+                    ? updatedItem
                     : item
             )
         );
 
-        setIsEditModalOpen(false);
+        // Đồng bộ sang bảng hồ sơ sinh viên
+        await supabase
+            .from('student_activities')
+            .update({
+                activity_title: updatedItem.title,
+                criteria_detail: updatedItem.criteria_detail || '',
+                completion_condition: updatedItem.completion_condition,
+                status: updatedItem.status,
+            })
+            .eq('activity_id', String(editingActivity.id));
+
         setUpdating(false);
-        await fetchOfficialActivities();
+        setIsEditModalOpen(false);
     };
 
     const handleDeleteOfficialActivity = async (id: string | number, title: string) => {
@@ -461,7 +471,7 @@ export default function SummaryPage() {
 
         setPublishingId(prop.id);
 
-        const { error } = await supabase.from('activities').insert([
+        const { data, error } = await supabase.from('activities').insert([
             {
                 proposal_id: prop.id,
                 title: prop.activity_title,
@@ -480,17 +490,19 @@ export default function SummaryPage() {
                 target_levels: prop.target_levels,
                 status: 'APPROVED',
             },
-        ]);
+        ]).select();
 
         setPublishingId(null);
 
         if (error) {
             alert('Có lỗi khi đưa lên Trang chủ: ' + error.message);
         } else {
+            if (data && data.length > 0) {
+                setOfficialActivities((prev) => [data[0] as Activity, ...prev]);
+            }
             if (!isSilent) {
                 alert('Đã đăng lên Trang chủ thành công!');
             }
-            await fetchOfficialActivities();
         }
     };
 
