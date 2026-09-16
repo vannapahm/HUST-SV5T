@@ -156,7 +156,8 @@ export default function ProposalPage() {
             project_url: formData.project_url,
             start_date: formData.start_date,
             end_date: formData.end_date,
-            registration_deadline: formData.registration_deadline || null,
+            // Chuyển đổi giờ máy (GMT+7) sang chuẩn ISO quốc tế trước khi lưu để không bị lệch 7 tiếng
+            registration_deadline: formData.registration_deadline ? new Date(formData.registration_deadline).toISOString() : null,
             completion_condition: formData.completion_condition || null,
             location: formData.location,
             target_standard: formData.standard,
@@ -288,8 +289,8 @@ export default function ProposalPage() {
                                                 readOnly={isStudentLoggedIn && !!formData.student_name}
                                                 onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
                                                 className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none transition-all ${isStudentLoggedIn && !!formData.student_name
-                                                    ? 'bg-slate-100 text-slate-600 font-semibold border-slate-200 cursor-not-allowed pr-8'
-                                                    : 'border-slate-300 focus:border-[#0C5776] bg-white'
+                                                        ? 'bg-slate-100 text-slate-600 font-semibold border-slate-200 cursor-not-allowed pr-8'
+                                                        : 'border-slate-300 focus:border-[#0C5776] bg-white'
                                                     }`}
                                             />
                                             {isStudentLoggedIn && !!formData.student_name && (
@@ -311,8 +312,8 @@ export default function ProposalPage() {
                                                 readOnly={isStudentLoggedIn}
                                                 onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
                                                 className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none transition-all ${isStudentLoggedIn
-                                                    ? 'bg-slate-100 text-slate-600 font-bold border-slate-200 cursor-not-allowed pr-8'
-                                                    : 'border-slate-300 focus:border-[#0C5776] bg-white'
+                                                        ? 'bg-slate-100 text-slate-600 font-bold border-slate-200 cursor-not-allowed pr-8'
+                                                        : 'border-slate-300 focus:border-[#0C5776] bg-white'
                                                     }`}
                                             />
                                             {isStudentLoggedIn && (
@@ -343,31 +344,31 @@ export default function ProposalPage() {
                                         />
                                     </div>
 
-                                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className='block text-xs font-medium text-slate-700 mb-1'>
-                                                Đơn vị tổ chức <span className='text-red-500'>*</span>
+                                            <label className="block text-xs font-medium text-slate-700 mb-1">
+                                                Đơn vị tổ chức <span className="text-red-500">*</span>
                                             </label>
                                             <input
-                                                type='text'
+                                                type="text"
                                                 required
-                                                placeholder='Tên đơn vị, đoàn thể hoặc ban tổ chức'
+                                                placeholder="Tên đơn vị, đoàn thể hoặc ban tổ chức"
                                                 value={formData.organizer}
                                                 onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
-                                                className='w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white'
+                                                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
                                             />
                                         </div>
                                         <div>
-                                            <label className='block text-xs font-medium text-slate-700 mb-1'>
-                                                Đối tượng tham gia <span className='text-red-500'>*</span>
+                                            <label className="block text-xs font-medium text-slate-700 mb-1">
+                                                Đối tượng tham gia <span className="text-red-500">*</span>
                                             </label>
                                             <input
-                                                type='text'
+                                                type="text"
                                                 required
-                                                placeholder='Ví dụ: Toàn thể sinh viên, đoàn viên thanh niên...'
+                                                placeholder="Ví dụ: Toàn thể sinh viên, đoàn viên thanh niên..."
                                                 value={formData.target_audience}
                                                 onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
-                                                className='w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white'
+                                                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
                                             />
                                         </div>
                                     </div>
