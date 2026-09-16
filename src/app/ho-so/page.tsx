@@ -1300,22 +1300,43 @@ export default function StudentPortfolioPage() {
 
                         <form onSubmit={handleAddActivity} className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700">
                             {addMode === 'SYSTEM' ? (
-                                <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Chọn hoạt động bạn đã tham gia *</label>
-                                    <select
-                                        value={selectedSystemActId}
-                                        onChange={(e) => setSelectedSystemActId(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
-                                        required
-                                    >
-                                        <option value="">-- Bấm để chọn hoạt động --</option>
-                                        {systemActivities.map((act) => (
-                                            <option key={act.id} value={act.id}>
-                                                [{CRITERIA_MAP[act.supported_standard] || act.supported_standard}] {act.title}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <p className="text-[11px] text-slate-400 mt-1.5">
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="block font-semibold mb-1 text-[#001C44]">Chọn hoạt động bạn đã tham gia *</label>
+                                        <select
+                                            value={selectedSystemActId}
+                                            onChange={(e) => setSelectedSystemActId(e.target.value)}
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
+                                            required
+                                        >
+                                            <option value="">-- Bấm để chọn hoạt động --</option>
+                                            {systemActivities.map((act) => (
+                                                <option key={act.id} value={act.id}>
+                                                    [{CRITERIA_MAP[act.supported_standard] || act.supported_standard}] {act.title}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Hiển thị điều kiện ghi nhận của hoạt động đang được chọn */}
+                                    {(() => {
+                                        const act = systemActivities.find((a) => String(a.id) === selectedSystemActId);
+                                        if (!act || !act.completion_condition) return null;
+                                        return (
+                                            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2 animate-in fade-in duration-150">
+                                                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                                <div className="leading-relaxed">
+                                                    <span className="font-semibold text-amber-800">Yêu cầu hoàn thành:</span>{' '}
+                                                    <span className="font-medium text-slate-700">{act.completion_condition}</span>
+                                                    <p className="text-[11px] text-amber-700/80 mt-0.5">
+                                                        * Hãy chắc chắn kết quả tham gia của bạn đạt tiêu chí trên trước khi lưu vào hồ sơ.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    <p className="text-[11px] text-slate-400 mt-1">
                                         * Khi hoạt động trên hệ thống có cập nhật trạng thái duyệt, hồ sơ của bạn sẽ tự động đồng bộ theo.
                                     </p>
                                 </div>
