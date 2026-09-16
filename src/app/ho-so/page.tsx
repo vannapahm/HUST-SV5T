@@ -30,6 +30,7 @@ interface OfficialActivity {
     organizer: string;
     supported_standard: string;
     criteria_detail?: string;
+    completion_condition?: string;
     start_date: string;
     status?: 'APPROVED' | 'PENDING' | 'REJECTED';
 }
