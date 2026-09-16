@@ -36,6 +36,17 @@ const CRITERIA_MAP: Record<string, string> = {
   HOI_NHAP: 'Hội nhập tốt',
 };
 
+// Hàm xác định năm học theo mốc: từ 15/09 năm trước đến trước 15/09 năm sau
+const getAcademicYearFromDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  const cleanDate = dateStr.split('T')[0];
+  const parts = cleanDate.split('-');
+  if (parts.length < 3) return '';
+  const year = parseInt(parts[0], 10);
+  const md = `${parts[1]}-${parts[2]}`;
+  return md >= '09-15' ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+};
+
 export default function HomePage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
