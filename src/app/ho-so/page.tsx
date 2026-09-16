@@ -7,7 +7,7 @@ import {
     ArrowLeft, PlusCircle, Trash2, Calendar, Award,
     ExternalLink, User, Sparkles, X, LogOut, ArrowRight,
     CheckCircle2, Clock, AlertCircle, Lock, KeyRound, FileSpreadsheet, Save, Calculator, Info,
-    Send, Pencil, MapPin, Building2, Check
+    Send, Pencil, MapPin, Building2, Check, Download, Search
 } from 'lucide-react';
 import { CRITERIA_TREE } from '@/data/criteria';
 import { generateDocxReport } from '@/lib/exportDocx';
@@ -208,6 +208,10 @@ export default function StudentPortfolioPage() {
     const [selectedSystemActId, setSelectedSystemActId] = useState<string>('');
     const [systemProofUrl, setSystemProofUrl] = useState<string>('');
 
+    // Tìm kiếm hoạt động (Searchable Dropdown)
+    const [actSearchTerm, setActSearchTerm] = useState('');
+    const [isActDropdownOpen, setIsActDropdownOpen] = useState(false);
+
     const [customForm, setCustomForm] = useState({
         activity_title: '',
         organizer: '',
@@ -242,9 +246,13 @@ export default function StudentPortfolioPage() {
     };
 
     useEffect(() => {
-        fetchSystemActivities();
         checkAutoLogin();
     }, []);
+
+    // Tự động load lại danh sách hoạt động khi sinh viên đổi tab Năm học
+    useEffect(() => {
+        fetchSystemActivities();
+    }, [academicYear]);
 
     const checkAutoLogin = async () => {
         try {
@@ -282,7 +290,21 @@ export default function StudentPortfolioPage() {
             .from('activities')
             .select('*')
             .order('start_date', { ascending: false });
-        if (data) setSystemActivities(data);
+
+        if (data) {
+            // Lọc thông minh: Chỉ lấy các hoạt động trong phạm vi năm học đã chọn
+            const startYearNum = parseInt(academicYear.split('-')[0]);
+            const startBound = new Date(`${startYearNum}-08-01`);
+            const endBound = new Date(`${startYearNum + 1}-08-01`);
+
+            const filteredActs = data.filter((act) => {
+                if (!act.start_date) return true;
+                const d = new Date(act.start_date);
+                return d >= startBound && d < endBound;
+            });
+
+            setSystemActivities(filteredActs);
+        }
     };
 
     const fetchRecords = async (mssv: string, year: string = academicYear) => {
@@ -570,6 +592,7 @@ export default function StudentPortfolioPage() {
             setIsModalOpen(false);
             setSelectedSystemActId('');
             setSystemProofUrl('');
+            setActSearchTerm(''); // Xóa kết quả tìm kiếm cho lần sau
             setCustomForm({
                 activity_title: '',
                 organizer: '',
@@ -1144,7 +1167,7 @@ export default function StudentPortfolioPage() {
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white">
                             <div>
                                 <h3 className="text-base font-bold text-[#001C44]">Chỉnh sửa đề xuất hoạt động</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Cập nhật thông tin trước khi Ban tổ chức tiến hành xét duyệt.</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Cập nhật thôngப்பி tin trước khi Ban tổ chức tiến hành xét duyệt.</p>
                             </div>
                             <button
                                 type="button"
@@ -1809,19 +1832,76 @@ export default function StudentPortfolioPage() {
                                 <div className="space-y-3">
                                     <div>
                                         <label className="block font-semibold mb-1 text-[#001C44]">Chọn hoạt động bạn đã tham gia *</label>
-                                        <select
-                                            value={selectedSystemActId}
-                                            onChange={(e) => setSelectedSystemActId(e.target.value)}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
-                                            required
-                                        >
-                                            <option value="">-- Bấm để chọn hoạt động --</option>
-                                            {systemActivities.map((act) => (
-                                                <option key={act.id} value={act.id}>
-                                                    [{CRITERIA_MAP[act.supported_standard] || act.supported_standard}] {act.title}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div className="relative">
+                                            {/* Ô Input để gõ tìm kiếm */}
+                                            <input
+                                                type="text"
+                                                placeholder="Gõ tên hoạt động để tìm kiếm nhanh..."
+                                                value={actSearchTerm}
+                                                onChange={(e) => {
+                                                    setActSearchTerm(e.target.value);
+                                                    setIsActDropdownOpen(true);
+                                                    setSelectedSystemActId(''); // Xóa id cũ nếu người dùng đang gõ tìm cái mới
+                                                }}
+                                                onFocus={() => setIsActDropdownOpen(true)}
+                                                className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white text-xs"
+                                            />
+                                            <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+                                            {/* Lớp phủ vô hình để khi bấm ra ngoài thì tự động đóng menu */}
+                                            {isActDropdownOpen && (
+                                                <div
+                                                    className="fixed inset-0 z-40"
+                                                    onClick={() => setIsActDropdownOpen(false)}
+                                                ></div>
+                                            )}
+
+                                            {/* Danh sách xổ xuống */}
+                                            {isActDropdownOpen && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                                    {Object.keys(CRITERIA_MAP).map((standardKey) => {
+                                                        // Lọc hoạt động vừa khớp Năm học, vừa khớp Tiêu chuẩn, vừa khớp Từ khóa gõ vào
+                                                        const actsInStandard = systemActivities.filter((a) =>
+                                                            a.supported_standard === standardKey &&
+                                                            a.title.toLowerCase().includes(actSearchTerm.toLowerCase())
+                                                        );
+
+                                                        if (actsInStandard.length === 0) return null;
+
+                                                        return (
+                                                            <div key={standardKey}>
+                                                                <div className="px-3 py-2 bg-slate-100 border-y border-slate-200 font-bold text-[#0C5776] text-[11px] sticky top-0 z-10">
+                                                                    ▬▬ {CRITERIA_MAP[standardKey].toUpperCase()} ▬▬
+                                                                </div>
+                                                                {actsInStandard.map((act) => (
+                                                                    <div
+                                                                        key={act.id}
+                                                                        onClick={() => {
+                                                                            setSelectedSystemActId(String(act.id));
+                                                                            setActSearchTerm(act.title); // Bấm chọn xong thì đẩy tên lên ô input
+                                                                            setIsActDropdownOpen(false); // Đóng menu
+                                                                        }}
+                                                                        className={`px-3 py-2 cursor-pointer text-xs transition-colors ${selectedSystemActId === String(act.id)
+                                                                                ? 'bg-blue-50 text-blue-700 font-semibold'
+                                                                                : 'hover:bg-slate-50 text-slate-700'
+                                                                            }`}
+                                                                    >
+                                                                        {act.title}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    })}
+
+                                                    {/* Trạng thái trống khi gõ không ra kết quả */}
+                                                    {systemActivities.filter(a => a.title.toLowerCase().includes(actSearchTerm.toLowerCase())).length === 0 && (
+                                                        <div className="px-3 py-6 text-center text-xs text-slate-500 relative z-10 bg-white">
+                                                            Không tìm thấy hoạt động nào mang tên "{actSearchTerm}"
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {(() => {
