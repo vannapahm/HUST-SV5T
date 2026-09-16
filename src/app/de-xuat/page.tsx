@@ -20,6 +20,7 @@ export default function ProposalPage() {
         project_url: '',
         start_date: '',
         end_date: '',
+        registration_deadline: '',
         location: '',
         standard: 'DAO_DUC',
         sub_criterion: CRITERIA_TREE['DAO_DUC'].items[0].full,
@@ -64,6 +65,7 @@ export default function ProposalPage() {
                 project_url: formData.project_url,
                 start_date: formData.start_date,
                 end_date: formData.end_date,
+                registration_deadline: formData.registration_deadline || null,
                 location: formData.location,
                 target_standard: formData.standard,
                 target_sub_criterion: formData.sub_criterion,
@@ -144,6 +146,7 @@ export default function ProposalPage() {
                                             project_url: '',
                                             start_date: '',
                                             end_date: '',
+                                            registration_deadline: '',
                                             location: '',
                                             standard: 'DAO_DUC',
                                             sub_criterion: CRITERIA_TREE['DAO_DUC'].items[0].full,
@@ -283,6 +286,18 @@ export default function ProposalPage() {
                                                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776]"
                                             />
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-700 mb-1">
+                                            Hạn chót đăng ký (ngày & giờ, nếu có)
+                                        </label>
+                                        <input
+                                            type="datetime-local"
+                                            value={formData.registration_deadline}
+                                            onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
+                                            className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] bg-white"
+                                        />
                                     </div>
 
                                     <div>
