@@ -858,8 +858,8 @@ export default function StudentPortfolioPage() {
                             <button
                                 onClick={() => setActiveTab('RECORDS')}
                                 className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'RECORDS'
-                                        ? 'border-[#0C5776] text-[#001C44]'
-                                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
                                     }`}
                             >
                                 <Award className="w-4 h-4 text-[#0C5776]" />
@@ -872,8 +872,8 @@ export default function StudentPortfolioPage() {
                             <button
                                 onClick={() => setActiveTab('PROPOSALS')}
                                 className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'PROPOSALS'
-                                        ? 'border-[#0C5776] text-[#001C44]'
-                                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-500 hover:text-slate-800'
                                     }`}
                             >
                                 <Send className="w-4 h-4 text-[#0C5776]" />
@@ -909,10 +909,10 @@ export default function StudentPortfolioPage() {
                                             <div
                                                 key={r.id}
                                                 className={`border rounded-xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${isRejected
-                                                        ? 'bg-rose-50/50 border-rose-200'
-                                                        : isPending
-                                                            ? 'bg-amber-50/30 border-amber-200'
-                                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-rose-50/50 border-rose-200'
+                                                    : isPending
+                                                        ? 'bg-amber-50/30 border-amber-200'
+                                                        : 'bg-white border-slate-200 hover:border-slate-300'
                                                     }`}
                                             >
                                                 <div className="space-y-1.5 flex-1">
@@ -1452,7 +1452,7 @@ export default function StudentPortfolioPage() {
                                             <input
                                                 type="text"
                                                 required
-                                                placeholder='VD: Chi hội trưởng (hoặc ghi "Không")'
+                                                placeholder='VD: Không có ghi "Không"'
                                                 value={academicData.position}
                                                 onChange={(e) => setAcademicData({ ...academicData, position: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#0C5776]"
@@ -1752,8 +1752,8 @@ export default function StudentPortfolioPage() {
                                 type="button"
                                 onClick={() => setAddMode('SYSTEM')}
                                 className={`pb-2.5 text-xs font-semibold border-b-2 transition-all ${addMode === 'SYSTEM'
-                                        ? 'border-[#0C5776] text-[#001C44]'
-                                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-400 hover:text-slate-600'
                                     }`}
                             >
                                 Chọn từ hoạt động trên hệ thống
@@ -1762,8 +1762,8 @@ export default function StudentPortfolioPage() {
                                 type="button"
                                 onClick={() => setAddMode('CUSTOM')}
                                 className={`pb-2.5 text-xs font-semibold border-b-2 transition-all ${addMode === 'CUSTOM'
-                                        ? 'border-[#0C5776] text-[#001C44]'
-                                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                                    ? 'border-[#0C5776] text-[#001C44]'
+                                    : 'border-transparent text-slate-400 hover:text-slate-600'
                                     }`}
                             >
                                 Tự nhập hoạt động bên ngoài
