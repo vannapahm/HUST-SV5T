@@ -58,7 +58,7 @@ export default function HomePage() {
 
   // Bộ lọc
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedYear, setSelectedYear] = useState('2025-2026');
+  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear);
   const [selectedStandard, setSelectedStandard] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
 
