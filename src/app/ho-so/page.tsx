@@ -10,6 +10,7 @@ import {
     Send, Pencil, MapPin, Building2, Check
 } from 'lucide-react';
 import { CRITERIA_TREE } from '@/data/criteria';
+import { generateDocxReport } from '@/lib/exportDocx';
 
 interface StudentRecord {
     id: number;
