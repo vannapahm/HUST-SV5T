@@ -37,7 +37,17 @@ const CRITERIA_MAP: Record<string, string> = {
   HOI_NHAP: 'Hội nhập tốt',
 };
 
-// Hàm xác định năm học theo mốc: từ 15/09 năm trước đến trước 15/09 năm sau
+// Hàm tự động xác định năm học hiện tại theo thời gian thực (mốc 15/09)
+const getCurrentAcademicYear = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const isAfterSep15 = month > 9 || (month === 9 && day >= 15);
+  return isAfterSep15 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+};
+
+// Hàm xác định năm học của từng hoạt động dựa trên ngày diễn ra
 const getAcademicYearFromDate = (dateStr?: string): string => {
   if (!dateStr) return '';
   const cleanDate = dateStr.split('T')[0];
@@ -47,7 +57,6 @@ const getAcademicYearFromDate = (dateStr?: string): string => {
   const month = parseInt(parts[1], 10);
   const day = parseInt(parts[2], 10);
 
-  // Từ 15/09 trở đi tính cho năm học mới (year -> year + 1)
   const isAfterSep15 = month > 9 || (month === 9 && day >= 15);
   return isAfterSep15 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
 };
@@ -56,9 +65,9 @@ export default function HomePage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Bộ lọc
+  // Bộ lọc: Năm học tự động lấy theo ngày hiện tại
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear);
+  const [selectedYear, setSelectedYear] = useState<string>(getCurrentAcademicYear);
   const [selectedStandard, setSelectedStandard] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
 
@@ -135,7 +144,7 @@ export default function HomePage() {
     };
   };
 
-  // Lọc danh sách hoạt động theo mốc 15/09 dựa trên start_date
+  // Lọc danh sách hoạt động theo năm học đang chọn qua mốc 15/09
   const activitiesInYear = useMemo(() => {
     return activities.filter((act) => {
       const actYear = getAcademicYearFromDate(act.start_date) || act.academic_year;
@@ -158,7 +167,7 @@ export default function HomePage() {
     });
   }, [activitiesInYear, selectedStandard, selectedStatus, searchQuery]);
 
-  // Thống kê số lượng hoạt động tương ứng theo năm đang chọn
+  // Thống kê số lượng hoạt động theo đúng năm học đang chọn
   const approvedCount = activitiesInYear.filter((a) => (a.status || 'APPROVED') === 'APPROVED').length;
   const pendingCount = activitiesInYear.filter((a) => a.status === 'PENDING').length;
 
@@ -176,7 +185,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-tight">
-                  Nền tảng xét chọn “Sinh viên 5 tốt”
+                  Nền tảng xét chọn "Sinh viên 5 tốt"
                 </h1>
                 <p className="text-xs text-[#BCFEFE]/80 mt-1">
                   Theo dõi danh mục hoạt động rèn luyện, tự đánh giá tiêu chí và quản lý hồ sơ tích lũy cá nhân.
@@ -209,7 +218,6 @@ export default function HomePage() {
                   Đề xuất hoạt động
                 </Link>
 
-                {/* NÚT BẤM CHO QUẢN TRỊ VIÊN */}
                 <Link
                   href="/tong-hop"
                   title="Chuyển đến bàn làm việc Quản trị viên"
@@ -429,7 +437,7 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Hàng 2: Tên hoạt động & Tiêu chí chi tiết */}
+                    {/* Hàng 2: Tên hoạt động, Tiêu chí chi tiết & Điều kiện ghi nhận */}
                     <div>
                       <h2 className={`text-base font-bold ${isRejected ? 'text-rose-900 line-through opacity-80' : 'text-[#001C44]'}`}>
                         {act.title}
@@ -444,7 +452,6 @@ export default function HomePage() {
                         </div>
                       )}
 
-                      {/* Điều kiện ghi nhận tiêu chí */}
                       {act.completion_condition && (
                         <div className="mt-1.5 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2">
                           <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
