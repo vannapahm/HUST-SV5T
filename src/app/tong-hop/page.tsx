@@ -8,7 +8,7 @@ import {
     CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw, Eye, Lock, LogOut, ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
-import { CRITERIA_TREE } from "@/data/criteria";
+import { CRITERIA_TREE } from '@/data/criteria';
 
 interface Proposal {
     id: string;
@@ -21,6 +21,8 @@ interface Proposal {
     project_url: string;
     start_date: string;
     end_date: string;
+    registration_deadline?: string;
+    completion_condition?: string;
     location: string;
     target_standard: string;
     target_sub_criterion: string;
@@ -40,6 +42,7 @@ interface Activity {
     start_date: string;
     end_date: string;
     registration_deadline?: string;
+    completion_condition?: string;
     location?: string;
     proof_method?: string;
     supported_standard: string;
@@ -91,13 +94,11 @@ const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
 const ADMIN_SECRET_KEY = '10012005';
 
 export default function SummaryPage() {
-    // Trạng thái kiểm tra quyền truy cập (ngăn chặn chớp nháy)
     const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [adminKeyInput, setAdminKeyInput] = useState<string>('');
     const [authError, setAuthError] = useState<string>('');
 
-    // Tab đang chọn (mặc định lấy từ lưu trữ phiên)
     const [activeTab, setActiveTab] = useState<'ACTIVITIES' | 'PROPOSALS' | 'STUDENTS'>('ACTIVITIES');
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -108,22 +109,18 @@ export default function SummaryPage() {
 
     const [publishingId, setPublishingId] = useState<string | null>(null);
 
-    // Modal thêm hoạt động
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [creating, setCreating] = useState(false);
 
-    // Modal sửa hoạt động
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [updating, setUpdating] = useState(false);
 
-    // Dữ liệu hồ sơ sinh viên (Tab 3)
     const [studentProfiles, setStudentProfiles] = useState<StudentProfile[]>([]);
     const [allStudentActivities, setAllStudentActivities] = useState<StudentActivityItem[]>([]);
     const [studentSearchMssv, setStudentSearchMssv] = useState('');
     const [selectedStudentDetail, setSelectedStudentDetail] = useState<string | null>(null);
 
-    // Form thêm mới
     const [officialForm, setOfficialForm] = useState({
         title: '',
         criteria_detail: '',
@@ -135,13 +132,13 @@ export default function SummaryPage() {
         start_date: '',
         end_date: '',
         registration_deadline: '',
+        completion_condition: '',
         location: '',
         proof_method: '',
         project_url: '',
         status: 'APPROVED' as 'APPROVED' | 'PENDING',
     });
 
-    // 1. KIỂM TRA PHIÊN VÀ PHỤC HỒI TAB TRƯỚC KHI RENDER
     useEffect(() => {
         try {
             const isAuth = sessionStorage.getItem('sv5t_admin_authenticated');
@@ -200,13 +197,11 @@ export default function SummaryPage() {
         }
     }, [isAuthenticated]);
 
-    // HÀM CHUYỂN TAB VÀ LƯU VÀO BỘ NHỚ DUY TRÌ KHI F5
     const handleTabChange = (tab: 'ACTIVITIES' | 'PROPOSALS' | 'STUDENTS') => {
         setActiveTab(tab);
         sessionStorage.setItem('sv5t_admin_active_tab', tab);
     };
 
-    // ĐĂNG NHẬP MẬT KHẨU QUẢN TRỊ VIÊN
     const handleLoginAdmin = (e: React.FormEvent) => {
         e.preventDefault();
         if (adminKeyInput === ADMIN_SECRET_KEY) {
@@ -218,7 +213,6 @@ export default function SummaryPage() {
         }
     };
 
-    // ĐĂNG XUẤT / KHÓA TRANG
     const handleLogoutAdmin = () => {
         sessionStorage.removeItem('sv5t_admin_authenticated');
         sessionStorage.removeItem('sv5t_admin_active_tab');
@@ -226,7 +220,6 @@ export default function SummaryPage() {
         setAdminKeyInput('');
     };
 
-    // ĐẶT LẠI MẬT KHẨU CHO SINH VIÊN
     const handleResetPin = async (mssv: string) => {
         const confirmReset = confirm(
             `Xác nhận đặt lại mật khẩu cho MSSV: ${mssv}?\nSau khi đặt lại, sinh viên sẽ được yêu cầu tạo mật khẩu 6 số mới trong lần đăng nhập tới.`
@@ -246,12 +239,11 @@ export default function SummaryPage() {
         }
     };
 
-    // ĐỔI TRẠNG THÁI HOẠT ĐỘNG & ĐỒNG BỘ DÂY CHUYỀN
     const handleActivityStatusChange = async (act: Activity, newStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => {
         const confirmChange = confirm(
             `Xác nhận đổi trạng thái hoạt động "${act.title}" thành:\n` +
             (newStatus === 'APPROVED' ? 'TỰ ĐỘNG GHI NHẬN' : newStatus === 'PENDING' ? 'CHỜ XÉT DUYỆT' : 'LOẠI / KHÔNG CÔNG NHẬN') +
-            `\n\nToàn bộ hồ sơ của sinh viên đã tham gia hoạt động này sẽ được tự động cập nhật đồng bộ.`
+            '\n\nToàn bộ hồ sơ của sinh viên đã tham gia hoạt động này sẽ được tự động cập nhật đồng bộ.'
         );
         if (!confirmChange) return;
 
@@ -299,11 +291,12 @@ export default function SummaryPage() {
                 title: officialForm.title,
                 organizer: officialForm.organizer,
                 target_audience: officialForm.target_audience,
-                content_description: officialForm.content_description || `Hoạt động hỗ trợ tiêu chuẩn Sinh viên 5 tốt.`,
+                content_description: officialForm.content_description || 'Hoạt động hỗ trợ tiêu chuẩn Sinh viên 5 tốt.',
                 project_url: officialForm.project_url,
                 start_date: officialForm.start_date,
                 end_date: officialForm.end_date || officialForm.start_date,
                 registration_deadline: officialForm.registration_deadline ? new Date(officialForm.registration_deadline).toISOString() : null,
+                completion_condition: officialForm.completion_condition || null,
                 location: officialForm.location,
                 proof_method: officialForm.proof_method,
                 supported_standard: officialForm.target_standard,
@@ -331,6 +324,7 @@ export default function SummaryPage() {
                 start_date: '',
                 end_date: '',
                 registration_deadline: '',
+                completion_condition: '',
                 location: '',
                 proof_method: '',
                 project_url: '',
@@ -360,6 +354,7 @@ export default function SummaryPage() {
                 start_date: editingActivity.start_date,
                 end_date: editingActivity.end_date || editingActivity.start_date,
                 registration_deadline: editingActivity.registration_deadline ? new Date(editingActivity.registration_deadline).toISOString() : null,
+                completion_condition: editingActivity.completion_condition || null,
                 location: editingActivity.location,
                 proof_method: editingActivity.proof_method,
                 supported_standard: editingActivity.supported_standard,
@@ -442,6 +437,8 @@ export default function SummaryPage() {
                 project_url: prop.project_url,
                 start_date: prop.start_date,
                 end_date: prop.end_date,
+                registration_deadline: prop.registration_deadline ? new Date(prop.registration_deadline).toISOString() : null,
+                completion_condition: prop.completion_condition || null,
                 location: prop.location,
                 proof_method: prop.proof_method,
                 supported_standard: prop.target_standard,
@@ -557,9 +554,6 @@ export default function SummaryPage() {
         return allStudentActivities.filter((a) => a.student_id === selectedStudentDetail);
     }, [selectedStudentDetail, allStudentActivities]);
 
-    // =========================================================================
-    // 1. KHI ĐANG KIỂM TRA PHIÊN: HIỂN THỊ TRẠNG THÁI CHỜ MƯỢT MÀ (KHÔNG CHỚP NHÁY)
-    // =========================================================================
     if (isAuthChecking) {
         return (
             <main className="min-h-screen bg-[#f8fafc] flex items-center justify-center text-xs text-slate-400">
@@ -571,9 +565,6 @@ export default function SummaryPage() {
         );
     }
 
-    // =========================================================================
-    // 2. NẾU CHƯA XÁC THỰC: HIỂN THỊ FORM KHÓA TRANG QUẢN TRỊ
-    // =========================================================================
     if (!isAuthenticated) {
         return (
             <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
@@ -645,9 +636,6 @@ export default function SummaryPage() {
         );
     }
 
-    // =========================================================================
-    // 3. KHI ĐÃ XÁC THỰC: HIỂN THỊ TRANG QUẢN TRỊ (GIỮ ĐÚNG TAB KHI F5)
-    // =========================================================================
     return (
         <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
             <div>
@@ -701,7 +689,6 @@ export default function SummaryPage() {
                 </header>
 
                 <div className="max-w-5xl mx-auto px-4 mt-6">
-                    {/* Thanh 3 Tab: Tự động lưu và giữ nguyên trạng thái khi F5 */}
                     <div className="flex border-b border-slate-200 gap-4 mb-4">
                         <button
                             onClick={() => handleTabChange('ACTIVITIES')}
@@ -745,7 +732,6 @@ export default function SummaryPage() {
                         </button>
                     </div>
 
-                    {/* Bộ lọc */}
                     {activeTab !== 'STUDENTS' && (
                         <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs mb-4">
                             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
@@ -792,7 +778,7 @@ export default function SummaryPage() {
                         </div>
                     )}
 
-                    {/* ======================= TAB 1: HOẠT ĐỘNG TRÊN HỆ THỐNG ======================= */}
+                    {/* TAB 1: HOẠT ĐỘNG TRÊN HỆ THỐNG */}
                     {activeTab === 'ACTIVITIES' && (
                         <div className="space-y-4">
                             {loading ? (
@@ -876,6 +862,16 @@ export default function SummaryPage() {
                                                         </div>
                                                     </div>
                                                 )}
+
+                                                {act.completion_condition && (
+                                                    <div className="mt-1.5 p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                                                        <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <span className="font-semibold text-amber-800">Điều kiện ghi nhận:</span>{' '}
+                                                            <span className="text-slate-700 font-medium">{act.completion_condition}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
@@ -921,7 +917,7 @@ export default function SummaryPage() {
                         </div>
                     )}
 
-                    {/* ======================= TAB 2: ĐỀ XUẤT TỪ SINH VIÊN ======================= */}
+                    {/* TAB 2: ĐỀ XUẤT TỪ SINH VIÊN */}
                     {activeTab === 'PROPOSALS' && (
                         <div className="space-y-4">
                             {loading ? (
@@ -983,6 +979,16 @@ export default function SummaryPage() {
                                                         <span className="text-slate-700">{prop.target_sub_criterion}</span>
                                                     </div>
                                                 </div>
+
+                                                {prop.completion_condition && (
+                                                    <div className="mt-1.5 p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                                                        <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <span className="font-semibold text-amber-800">Điều kiện ghi nhận:</span>{' '}
+                                                            <span className="text-slate-700 font-medium">{prop.completion_condition}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
@@ -1046,7 +1052,7 @@ export default function SummaryPage() {
                         </div>
                     )}
 
-                    {/* ======================= TAB 3: DANH SÁCH TOÀN BỘ HỒ SƠ SINH VIÊN ======================= */}
+                    {/* TAB 3: DANH SÁCH TOÀN BỘ HỒ SƠ SINH VIÊN */}
                     {activeTab === 'STUDENTS' && (
                         <div className="space-y-4">
                             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
@@ -1137,7 +1143,6 @@ export default function SummaryPage() {
                                 </div>
                             )}
 
-                            {/* Modal xem chi tiết hồ sơ */}
                             {selectedStudentDetail && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                                     <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
@@ -1200,7 +1205,6 @@ export default function SummaryPage() {
                 </div>
             </div>
 
-            {/* Footer */}
             <footer className="mt-20 border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-1 bg-white">
                 <p className="text-slate-400">
                     Đại học Bách khoa Hà Nội • Bản quyền © 2026
@@ -1320,7 +1324,7 @@ export default function SummaryPage() {
                                 <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Tiêu chí cụ thể *</label>
                                     <select
-                                        value={officialForm.criteria_detail || ""}
+                                        value={officialForm.criteria_detail || ''}
                                         onChange={(e) =>
                                             setOfficialForm({ ...officialForm, criteria_detail: e.target.value })
                                         }
@@ -1368,6 +1372,22 @@ export default function SummaryPage() {
                                         onChange={(e) => setOfficialForm({ ...officialForm, registration_deadline: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">
+                                        Điều kiện hoàn thành / ghi nhận tiêu chí (nếu có)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ví dụ: Đạt từ 38/40 điểm trở lên; Hoàn thành tối thiểu 5km..."
+                                        value={officialForm.completion_condition}
+                                        onChange={(e) => setOfficialForm({ ...officialForm, completion_condition: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#0C5776] bg-white"
+                                    />
+                                    <p className="text-[11px] text-slate-400 mt-1">
+                                        * Quy định cụ thể của BTC để được tính tiêu chí (hiển thị công khai cho sinh viên trên Trang chủ).
+                                    </p>
                                 </div>
 
                                 <div>
@@ -1525,7 +1545,7 @@ export default function SummaryPage() {
                                 <div>
                                     <label className="block font-semibold mb-1 text-[#001C44]">Tiêu chí cụ thể *</label>
                                     <select
-                                        value={editingActivity.criteria_detail || ""}
+                                        value={editingActivity.criteria_detail || ''}
                                         onChange={(e) =>
                                             setEditingActivity({ ...editingActivity, criteria_detail: e.target.value })
                                         }
@@ -1580,6 +1600,19 @@ export default function SummaryPage() {
                                         }
                                         onChange={(e) => setEditingActivity({ ...editingActivity, registration_deadline: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-[#0C5776] text-xs"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">
+                                        Điều kiện hoàn thành / ghi nhận tiêu chí (nếu có)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ví dụ: Đạt từ 38/40 điểm trở lên; Hoàn thành tối thiểu 5km..."
+                                        value={editingActivity.completion_condition || ''}
+                                        onChange={(e) => setEditingActivity({ ...editingActivity, completion_condition: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#0C5776] bg-white"
                                     />
                                 </div>
 
