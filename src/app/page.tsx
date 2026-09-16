@@ -20,6 +20,7 @@ interface Activity {
   start_date: string;
   end_date: string;
   registration_deadline?: string;
+  completion_condition?: string;
   location?: string;
   proof_method?: string;
   supported_standard: string;
@@ -439,6 +440,17 @@ export default function HomePage() {
                           <div>
                             <span className="font-semibold text-[#0C5776]">Tiêu chí tương ứng:</span>{' '}
                             <span className="text-slate-700">{act.criteria_detail}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Điều kiện ghi nhận tiêu chí */}
+                      {act.completion_condition && (
+                        <div className="mt-1.5 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold text-amber-800">Điều kiện ghi nhận:</span>{' '}
+                            <span className="text-slate-700 font-medium">{act.completion_condition}</span>
                           </div>
                         </div>
                       )}
