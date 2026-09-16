@@ -81,7 +81,17 @@ const FACULTIES = [
     'Khoa Ngoại ngữ'
 ];
 
-// Định dạng GPA tối thiểu 1 chữ số, tối đa 2 chữ số thập phân (VD: 3.0 hoặc 3.22)
+// Hàm tự động tính năm học hiện tại theo mốc 15/09
+const getCurrentAcademicYear = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const isAfterSep15 = month > 9 || (month === 9 && day >= 15);
+    return isAfterSep15 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+};
+
+// Định dạng GPA tối thiểu 1 chữ số, tối đa 2 chữ số thập phân
 const formatGPA = (val: number) => {
     if (!val || isNaN(val)) return '0.0';
     const rounded = Number(val.toFixed(2));
@@ -91,8 +101,8 @@ const formatGPA = (val: number) => {
 export default function StudentPortfolioPage() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [loadingAuth, setLoadingAuth] = useState<boolean>(true);
-    const [academicYear, setAcademicYear] = useState<string>('2025-2026');
-    const startYear = academicYear.split('-')[0]; // Tách ra 2025 hoặc 2026
+    const [academicYear, setAcademicYear] = useState<string>(getCurrentAcademicYear);
+    const startYear = academicYear.split('-')[0];
 
     // Form đăng nhập
     const [mssvInput, setMssvInput] = useState('');
@@ -110,7 +120,7 @@ export default function StudentPortfolioPage() {
     const [oldPinInput, setOldPinInput] = useState('');
     const [newPinInput, setNewPinInput] = useState('');
 
-    // Modal thông tin học vụ (Báo cáo thành tích)
+    // Modal thông tin học vụ
     const [isAcademicModalOpen, setIsAcademicModalOpen] = useState(false);
     const [savingAcademic, setSavingAcademic] = useState(false);
     const [academicData, setAcademicData] = useState<AcademicInfo>({
@@ -241,7 +251,6 @@ export default function StudentPortfolioPage() {
         }
     };
 
-    // Tự động tải lại hoạt động và điểm tương ứng khi sinh viên đổi năm học
     useEffect(() => {
         if (isLoggedIn && currentMssv) {
             fetchRecords(currentMssv, academicYear);
@@ -435,9 +444,9 @@ export default function StudentPortfolioPage() {
                 organizer: act.organizer,
                 target_standard: act.supported_standard,
                 criteria_detail: act.criteria_detail || 'Tham gia hoạt động được công nhận',
-                completion_condition: act.completion_condition || null, // <-- Lưu điều kiện vào hồ sơ
+                completion_condition: act.completion_condition || null,
                 participation_date: act.start_date ? act.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
-                proof_url: systemProofUrl.trim() || '', // <-- Lưu link minh chứng của sinh viên
+                proof_url: systemProofUrl.trim() || '',
                 status: act.status || 'APPROVED',
             };
         } else {
@@ -453,6 +462,7 @@ export default function StudentPortfolioPage() {
                 organizer: customForm.organizer || 'Ban tổ chức',
                 target_standard: customForm.target_standard,
                 criteria_detail: customForm.criteria_detail,
+                completion_condition: null,
                 participation_date: customForm.participation_date,
                 proof_url: customForm.proof_url,
                 status: 'PENDING',
@@ -467,6 +477,7 @@ export default function StudentPortfolioPage() {
             setRecords([data[0] as StudentRecord, ...records]);
             setIsModalOpen(false);
             setSelectedSystemActId('');
+            setSystemProofUrl('');
             setCustomForm({
                 activity_title: '',
                 organizer: '',
@@ -573,7 +584,7 @@ export default function StudentPortfolioPage() {
                     </div>
                 </header>
 
-                {/* ==================== MÀN HÌNH ĐĂNG NHẬP (ĐÃ TỐI ƯU GỌN GÀNG, KHÔNG CUỘN) ==================== */}
+                {/* Màn hình đăng nhập */}
                 {!isLoggedIn && (
                     <div className="max-w-md mx-auto px-4 py-10 animate-in fade-in zoom-in duration-150">
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm space-y-4">
@@ -662,7 +673,7 @@ export default function StudentPortfolioPage() {
                     </div>
                 )}
 
-                {/* ==================== MÀN HÌNH HỒ SƠ TÍCH LŨY ==================== */}
+                {/* Màn hình hồ sơ tích lũy */}
                 {isLoggedIn && (
                     <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-150">
                         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
@@ -732,7 +743,7 @@ export default function StudentPortfolioPage() {
                                 <div className="py-12 text-center text-xs text-slate-500">Đang tải hồ sơ tích lũy...</div>
                             ) : records.length === 0 ? (
                                 <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500 text-xs space-y-3">
-                                    <p>Hồ sơ MSSV <strong>{currentMssv}</strong> chưa có hoạt động nào.</p>
+                                    <p>Hồ sơ MSSV <strong>{currentMssv}</strong> chưa có hoạt động nào trong năm học {academicYear}.</p>
                                     <button
                                         onClick={() => setIsModalOpen(true)}
                                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0C5776] text-white text-xs font-semibold hover:bg-[#001C44] transition-colors"
@@ -792,7 +803,6 @@ export default function StudentPortfolioPage() {
                                                     <strong>Tiêu chí:</strong> {r.criteria_detail}
                                                 </p>
 
-                                                {/* Hiển thị điều kiện ghi nhận nếu có */}
                                                 {r.completion_condition && (
                                                     <p className="text-xs text-amber-800 bg-amber-50/80 border border-amber-200 px-2 py-1 rounded-md inline-block">
                                                         <strong>Yêu cầu hoàn thành:</strong> {r.completion_condition}
@@ -837,7 +847,7 @@ export default function StudentPortfolioPage() {
                 )}
             </div>
 
-            {/* ==================== MODAL THÔNG TIN HỌC VỤ & BÁO CÁO SV5T ==================== */}
+            {/* Modal thông tin học vụ & Báo cáo SV5T */}
             {isAcademicModalOpen && (
                 <div
                     onClick={() => setIsAcademicModalOpen(false)}
@@ -977,7 +987,6 @@ export default function StudentPortfolioPage() {
                                         </div>
                                     </div>
 
-                                    {/* Chia tỷ lệ 12 cột: Chức vụ (4) - SĐT (3, co ngắn lại) - Email SIS (5, mở rộng chiều rộng) */}
                                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                                         <div className="sm:col-span-4">
                                             <label className="block font-semibold mb-1">Chức vụ Đoàn - Hội *</label>
@@ -1214,7 +1223,7 @@ export default function StudentPortfolioPage() {
                 </div>
             )}
 
-            {/* MODAL ĐỔI MẬT KHẨU */}
+            {/* Modal đổi mật khẩu */}
             {isChangePinOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
                     <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
@@ -1267,7 +1276,7 @@ export default function StudentPortfolioPage() {
                 </div>
             )}
 
-            {/* MODAL GHI NHẬN HOẠT ĐỘNG */}
+            {/* Modal ghi nhận hoạt động */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
                     <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
