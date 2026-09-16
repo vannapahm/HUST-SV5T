@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     Download, ExternalLink, Calendar, MapPin, Building2, User,
     Award, ArrowLeft, Filter, Trash2, Globe, PlusCircle, X, Pencil,
-    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw, Eye, Lock, LogOut, ArrowRight
+    CheckCircle2, Clock, AlertCircle, Search, ShieldCheck, KeyRound, RotateCcw, Eye, Lock, LogOut, ArrowRight, Timer
 } from 'lucide-react';
 import Link from 'next/link';
 import { CRITERIA_TREE } from '@/data/criteria';
@@ -99,6 +99,14 @@ const formatDatetimeLocal = (isoStr?: string) => {
     if (isNaN(d.getTime())) return '';
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const formatDateTimeVN = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())} ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
 
 export default function SummaryPage() {
@@ -270,9 +278,7 @@ export default function SummaryPage() {
             .update({ status: newStatus })
             .eq('activity_id', String(act.id));
 
-        setOfficialActivities((prev) =>
-            prev.map((item) => (item.id === act.id ? { ...item, status: newStatus } : item))
-        );
+        await fetchOfficialActivities();
 
         setAllStudentActivities((prev) =>
             prev.map((item) => item.activity_title === act.title ? { ...item, status: newStatus } : item)
@@ -296,17 +302,17 @@ export default function SummaryPage() {
 
         const { error } = await supabase.from('activities').insert([
             {
-                title: officialForm.title,
-                organizer: officialForm.organizer,
+                title: officialForm.title.trim(),
+                organizer: officialForm.organizer.trim(),
                 target_audience: officialForm.target_audience,
                 content_description: officialForm.content_description || 'Hoạt động hỗ trợ tiêu chuẩn Sinh viên 5 tốt.',
-                project_url: officialForm.project_url,
+                project_url: officialForm.project_url?.trim() || null,
                 start_date: officialForm.start_date,
                 end_date: officialForm.end_date || officialForm.start_date,
                 registration_deadline: officialForm.registration_deadline ? new Date(officialForm.registration_deadline).toISOString() : null,
-                completion_condition: officialForm.completion_condition || null,
-                location: officialForm.location,
-                proof_method: officialForm.proof_method,
+                completion_condition: officialForm.completion_condition?.trim() || null,
+                location: officialForm.location?.trim() || null,
+                proof_method: officialForm.proof_method.trim(),
                 supported_standard: officialForm.target_standard,
                 criteria_detail: officialForm.criteria_detail,
                 target_levels: officialForm.target_levels,
@@ -338,7 +344,7 @@ export default function SummaryPage() {
                 project_url: '',
                 status: 'APPROVED',
             });
-            fetchOfficialActivities();
+            await fetchOfficialActivities();
         }
     };
 
@@ -347,53 +353,74 @@ export default function SummaryPage() {
         setIsEditModalOpen(true);
     };
 
+    // Hàm cập nhật hoạt động: Lưu và làm mới giao diện ngay lập tức
     const handleUpdateActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingActivity) return;
 
         setUpdating(true);
 
+        let deadlineIso: string | null = null;
+        if (editingActivity.registration_deadline) {
+            const parsed = new Date(editingActivity.registration_deadline);
+            if (!isNaN(parsed.getTime())) {
+                deadlineIso = parsed.toISOString();
+            }
+        }
+
+        const payload = {
+            title: editingActivity.title.trim(),
+            organizer: editingActivity.organizer.trim(),
+            target_audience: editingActivity.target_audience || 'Toàn thể sinh viên Đại học Bách khoa Hà Nội',
+            start_date: editingActivity.start_date,
+            end_date: editingActivity.end_date || editingActivity.start_date,
+            registration_deadline: deadlineIso,
+            completion_condition: editingActivity.completion_condition?.trim() || null,
+            location: editingActivity.location?.trim() || null,
+            proof_method: editingActivity.proof_method?.trim() || '',
+            supported_standard: editingActivity.supported_standard,
+            criteria_detail: editingActivity.criteria_detail,
+            target_levels: editingActivity.target_levels,
+            project_url: editingActivity.project_url?.trim() || null,
+            status: editingActivity.status || 'APPROVED',
+        };
+
         const { error } = await supabase
             .from('activities')
-            .update({
-                title: editingActivity.title,
-                organizer: editingActivity.organizer,
-                target_audience: editingActivity.target_audience,
-                start_date: editingActivity.start_date,
-                end_date: editingActivity.end_date || editingActivity.start_date,
-                registration_deadline: editingActivity.registration_deadline ? new Date(editingActivity.registration_deadline).toISOString() : null,
-                completion_condition: editingActivity.completion_condition || null,
-                location: editingActivity.location,
-                proof_method: editingActivity.proof_method,
-                supported_standard: editingActivity.supported_standard,
-                criteria_detail: editingActivity.criteria_detail,
-                target_levels: editingActivity.target_levels,
-                project_url: editingActivity.project_url,
-                status: editingActivity.status || 'APPROVED',
-            })
+            .update(payload)
             .eq('id', editingActivity.id);
 
-        setUpdating(false);
-
         if (error) {
+            setUpdating(false);
             alert('Lỗi khi cập nhật: ' + error.message);
             return;
         }
 
+        // Đồng bộ tiêu đề và điều kiện sang bảng hồ sơ sinh viên
         await supabase
             .from('student_activities')
             .update({
-                activity_title: editingActivity.title,
-                criteria_detail: editingActivity.criteria_detail,
-                status: editingActivity.status || 'APPROVED',
+                activity_title: payload.title,
+                criteria_detail: payload.criteria_detail,
+                completion_condition: payload.completion_condition,
+                status: payload.status,
             })
             .eq('activity_id', String(editingActivity.id));
 
+        // Cập nhật state trực tiếp lập tức (sử dụng String so sánh id chống lệch kiểu dữ liệu)
         setOfficialActivities((prev) =>
-            prev.map((item) => (item.id === editingActivity.id ? editingActivity : item))
+            prev.map((item) =>
+                String(item.id) === String(editingActivity.id)
+                    ? { ...item, ...payload, id: item.id }
+                    : item
+            )
         );
+
         setIsEditModalOpen(false);
-        alert('Đã lưu thay đổi hoạt động thành công!');
+        setUpdating(false);
+
+        // Tải lại ngầm để đảm bảo khớp 100% với database
+        await fetchOfficialActivities();
     };
 
     const handleDeleteOfficialActivity = async (id: string | number, title: string) => {
@@ -407,7 +434,7 @@ export default function SummaryPage() {
             return;
         }
 
-        setOfficialActivities((prev) => prev.filter((a) => a.id !== id));
+        setOfficialActivities((prev) => prev.filter((a) => String(a.id) !== String(id)));
         alert('Đã xóa hoạt động khỏi Trang chủ thành công!');
     };
 
@@ -424,10 +451,9 @@ export default function SummaryPage() {
         }
 
         setProposals((prev) => prev.filter((p) => p.id !== id));
-        fetchOfficialActivities();
+        await fetchOfficialActivities();
     };
 
-    // Hàm đưa hoạt động ra Trang chủ (có tham số isSilent để tự động kích hoạt khi duyệt)
     const handlePublishToHome = async (prop: Proposal, isSilent = false) => {
         if (!isSilent) {
             const confirmPublish = confirm(
@@ -450,7 +476,7 @@ export default function SummaryPage() {
                 end_date: prop.end_date,
                 registration_deadline: prop.registration_deadline ? new Date(prop.registration_deadline).toISOString() : null,
                 completion_condition: prop.completion_condition || null,
-                location: prop.location,
+                location: prop.location || null,
                 proof_method: prop.proof_method,
                 supported_standard: prop.target_standard,
                 criteria_detail: prop.target_sub_criterion,
@@ -467,7 +493,7 @@ export default function SummaryPage() {
             if (!isSilent) {
                 alert('Đã đăng lên Trang chủ thành công!');
             }
-            fetchOfficialActivities();
+            await fetchOfficialActivities();
         }
     };
 
@@ -481,7 +507,7 @@ export default function SummaryPage() {
         return dateStr;
     };
 
-    // Khi chuyển trạng thái sang APPROVED -> Tự động đưa ra Trang chủ luôn
+    // Khi duyệt sang APPROVED -> Tự động đưa ra Trang chủ luôn nếu chưa có
     const handleProposalStatusChange = async (proposal: Proposal, newStatus: string) => {
         const { error } = await supabase
             .from('proposals')
@@ -504,7 +530,7 @@ export default function SummaryPage() {
 
             if (!isAlreadyPublished) {
                 await handlePublishToHome(proposal, true);
-                alert(`Đã công nhận và tự động đưa hoạt động "${proposal.activity_title}" ra ngoài Trang chủ thành công!`);
+                alert(`Đã công nhận và tự động đưa hoạt động "${proposal.activity_title}" ra Trang chủ thành công!`);
             }
         }
     };
@@ -517,8 +543,8 @@ export default function SummaryPage() {
 
         const headers = [
             'STT', 'Người đề xuất', 'MSSV', 'Tên hoạt động', 'Đơn vị tổ chức',
-            'Thời gian', 'Địa điểm', 'Tiêu chuẩn', 'Tiêu chí chi tiết',
-            'Cấp xét', 'Cách thức minh chứng', 'Link đề án/bài viết', 'Ghi chú', 'Trạng thái rà soát'
+            'Thời gian', 'Hạn chót đăng ký', 'Địa điểm', 'Tiêu chuẩn', 'Tiêu chí chi tiết',
+            'Điều kiện hoàn thành', 'Cấp xét', 'Cách thức minh chứng', 'Link đề án/bài viết', 'Ghi chú', 'Trạng thái rà soát'
         ];
 
         const rows = filteredProposals.map((p, index) => [
@@ -528,9 +554,11 @@ export default function SummaryPage() {
             `"${p.activity_title.replace(/"/g, '""')}"`,
             `"${p.organizer.replace(/"/g, '""')}"`,
             `"${formatDateVN(p.start_date)} -> ${formatDateVN(p.end_date)}"`,
-            `"${p.location.replace(/"/g, '""')}"`,
+            `"${p.registration_deadline ? formatDateTimeVN(p.registration_deadline) : ''}"`,
+            `"${(p.location || '').replace(/"/g, '""')}"`,
             `"${CRITERIA_MAP[p.target_standard] || p.target_standard}"`,
             `"${p.target_sub_criterion.replace(/"/g, '""')}"`,
+            `"${(p.completion_condition || '').replace(/"/g, '""')}"`,
             `"${p.target_levels?.join(', ')}"`,
             `"${p.proof_method.replace(/"/g, '""')}"`,
             `"${p.project_url}"`,
@@ -898,10 +926,16 @@ export default function SummaryPage() {
                                                     <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
                                                     <span>Thời gian: {formatDateVN(act.start_date)} → {formatDateVN(act.end_date)}</span>
                                                 </div>
+                                                {act.registration_deadline && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Timer className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                                        <span>Hạn đăng ký: <strong className="text-rose-600">{formatDateTimeVN(act.registration_deadline)}</strong></span>
+                                                    </div>
+                                                )}
                                                 {act.location && (
                                                     <div className="flex items-center gap-2">
                                                         <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                                                        <span>Địa điểm: {act.location}</span>
+                                                        <span>Địa điểm: <strong>{act.location}</strong></span>
                                                     </div>
                                                 )}
                                                 {act.proof_method && (
@@ -1019,10 +1053,18 @@ export default function SummaryPage() {
                                                     <Calendar className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
                                                     <span>Thời gian: {formatDateVN(prop.start_date)} → {formatDateVN(prop.end_date)}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
-                                                    <span>Địa điểm: {prop.location}</span>
-                                                </div>
+                                                {prop.registration_deadline && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Timer className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                                        <span>Hạn đăng ký: <strong className="text-rose-600">{formatDateTimeVN(prop.registration_deadline)}</strong></span>
+                                                    </div>
+                                                )}
+                                                {prop.location && (
+                                                    <div className="flex items-center gap-2">
+                                                        <MapPin className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
+                                                        <span>Địa điểm: <strong>{prop.location}</strong></span>
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center gap-2">
                                                     <User className="w-3.5 h-3.5 text-[#2D99AE] shrink-0" />
                                                     <span>Người đề xuất: <strong>{prop.student_name}</strong> ({prop.student_id})</span>
@@ -1391,7 +1433,7 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (ngày & giờ)</label>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (ngày & giờ, nếu có)</label>
                                     <input
                                         type="datetime-local"
                                         value={officialForm.registration_deadline}
@@ -1411,9 +1453,6 @@ export default function SummaryPage() {
                                         onChange={(e) => setOfficialForm({ ...officialForm, completion_condition: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#0C5776] bg-white"
                                     />
-                                    <p className="text-[11px] text-slate-400 mt-1">
-                                        * Quy định cụ thể của BTC để được tính tiêu chí (hiển thị công khai cho sinh viên trên Trang chủ).
-                                    </p>
                                 </div>
 
                                 <div>
@@ -1623,7 +1662,7 @@ export default function SummaryPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (ngày & giờ)</label>
+                                    <label className="block font-semibold mb-1 text-[#001C44]">Hạn chót đăng ký (ngày & giờ, nếu có)</label>
                                     <input
                                         type="datetime-local"
                                         value={formatDatetimeLocal(editingActivity.registration_deadline)}
