@@ -493,12 +493,19 @@ export default function SummaryPage() {
         );
 
         if (newStatus === 'APPROVED') {
-            const confirmPublish = confirm(
-                `Đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này lên Trang chủ ngay không?`
+            // Kiểm tra xem đề xuất này đã từng đưa ra Trang chủ hay chưa
+            const isAlreadyPublished = officialActivities.some(
+                (act) => act.proposal_id === proposal.id || act.title === proposal.activity_title
             );
 
-            if (confirmPublish) {
-                await handlePublishToHome(proposal);
+            if (!isAlreadyPublished) {
+                const confirmPublish = confirm(
+                    `Đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này lên Trang chủ ngay không?`
+                );
+
+                if (confirmPublish) {
+                    await handlePublishToHome(proposal);
+                }
             }
         }
     };
@@ -942,6 +949,11 @@ export default function SummaryPage() {
                                         badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
                                     };
 
+                                    // Kiểm tra xem đề xuất này đã được đưa ra Trang chủ hay chưa
+                                    const isPublished = officialActivities.some(
+                                        (act) => act.proposal_id === prop.id || act.title === prop.activity_title
+                                    );
+
                                     return (
                                         <div
                                             key={prop.id}
@@ -1044,14 +1056,22 @@ export default function SummaryPage() {
                                                         <span>Xóa</span>
                                                     </button>
 
-                                                    <button
-                                                        onClick={() => handlePublishToHome(prop)}
-                                                        disabled={publishingId === prop.id}
-                                                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-[#0C5776] text-white hover:bg-[#001C44] transition-colors disabled:opacity-50 shadow-xs"
-                                                    >
-                                                        <Globe className="w-3.5 h-3.5 text-[#BCFEFE]" />
-                                                        <span>{publishingId === prop.id ? 'Đang đăng...' : 'Đưa ra Trang chủ'}</span>
-                                                    </button>
+                                                    {/* Kiểm tra: nếu đã đưa ra Trang chủ thì hiện huy hiệu, ngược lại hiện nút đăng */}
+                                                    {isPublished ? (
+                                                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                                            <span>Đã đưa ra Trang chủ</span>
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handlePublishToHome(prop)}
+                                                            disabled={publishingId === prop.id}
+                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-[#0C5776] text-white hover:bg-[#001C44] transition-colors disabled:opacity-50 shadow-xs"
+                                                        >
+                                                            <Globe className="w-3.5 h-3.5 text-[#BCFEFE]" />
+                                                            <span>{publishingId === prop.id ? 'Đang đăng...' : 'Đưa ra Trang chủ'}</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
