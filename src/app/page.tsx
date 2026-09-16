@@ -130,10 +130,17 @@ export default function HomePage() {
     };
   };
 
-  const filteredActivities = useMemo(() => {
+  // Lọc danh sách hoạt động theo mốc 15/09 dựa trên start_date
+  const activitiesInYear = useMemo(() => {
     return activities.filter((act) => {
+      const actYear = getAcademicYearFromDate(act.start_date) || act.academic_year;
+      return actYear === selectedYear;
+    });
+  }, [activities, selectedYear]);
+
+  const filteredActivities = useMemo(() => {
+    return activitiesInYear.filter((act) => {
       const actStatus = act.status || 'APPROVED';
-      const matchYear = !act.academic_year || act.academic_year === selectedYear;
       const matchStandard = selectedStandard === 'ALL' || act.supported_standard === selectedStandard;
       const matchStatus = selectedStatus === 'ALL' || actStatus === selectedStatus;
       const matchSearch =
@@ -142,12 +149,13 @@ export default function HomePage() {
         act.organizer.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
         (act.criteria_detail && act.criteria_detail.toLowerCase().includes(searchQuery.toLowerCase().trim()));
 
-      return matchYear && matchStandard && matchStatus && matchSearch;
+      return matchStandard && matchStatus && matchSearch;
     });
-  }, [activities, selectedYear, selectedStandard, selectedStatus, searchQuery]);
+  }, [activitiesInYear, selectedStandard, selectedStatus, searchQuery]);
 
-  const approvedCount = activities.filter((a) => (a.status || 'APPROVED') === 'APPROVED').length;
-  const pendingCount = activities.filter((a) => a.status === 'PENDING').length;
+  // Thống kê số lượng hoạt động tương ứng theo năm đang chọn
+  const approvedCount = activitiesInYear.filter((a) => (a.status || 'APPROVED') === 'APPROVED').length;
+  const pendingCount = activitiesInYear.filter((a) => a.status === 'PENDING').length;
 
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col justify-between">
