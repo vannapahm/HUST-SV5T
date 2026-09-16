@@ -93,7 +93,6 @@ const ACTIVITY_STATUS: Record<string, { label: string; badgeClass: string }> = {
 
 const ADMIN_SECRET_KEY = '10012005';
 
-// Chuyển đổi chuỗi ISO sang định dạng YYYY-MM-DDTHH:mm cho input datetime-local theo giờ địa phương
 const formatDatetimeLocal = (isoStr?: string) => {
     if (!isoStr) return '';
     const d = new Date(isoStr);
@@ -428,11 +427,14 @@ export default function SummaryPage() {
         fetchOfficialActivities();
     };
 
-    const handlePublishToHome = async (prop: Proposal) => {
-        const confirmPublish = confirm(
-            `Đăng hoạt động "${prop.activity_title}" ra ngoài Trang chủ để sinh viên theo dõi?`
-        );
-        if (!confirmPublish) return;
+    // Hàm đưa hoạt động ra Trang chủ (có tham số isSilent để tự động kích hoạt khi duyệt)
+    const handlePublishToHome = async (prop: Proposal, isSilent = false) => {
+        if (!isSilent) {
+            const confirmPublish = confirm(
+                `Đăng hoạt động "${prop.activity_title}" ra ngoài Trang chủ để sinh viên theo dõi?`
+            );
+            if (!confirmPublish) return;
+        }
 
         setPublishingId(prop.id);
 
@@ -462,7 +464,9 @@ export default function SummaryPage() {
         if (error) {
             alert('Có lỗi khi đưa lên Trang chủ: ' + error.message);
         } else {
-            alert('Đã đăng lên Trang chủ thành công!');
+            if (!isSilent) {
+                alert('Đã đăng lên Trang chủ thành công!');
+            }
             fetchOfficialActivities();
         }
     };
@@ -477,6 +481,7 @@ export default function SummaryPage() {
         return dateStr;
     };
 
+    // Khi chuyển trạng thái sang APPROVED -> Tự động đưa ra Trang chủ luôn
     const handleProposalStatusChange = async (proposal: Proposal, newStatus: string) => {
         const { error } = await supabase
             .from('proposals')
@@ -493,19 +498,13 @@ export default function SummaryPage() {
         );
 
         if (newStatus === 'APPROVED') {
-            // Kiểm tra xem đề xuất này đã từng đưa ra Trang chủ hay chưa
             const isAlreadyPublished = officialActivities.some(
                 (act) => act.proposal_id === proposal.id || act.title === proposal.activity_title
             );
 
             if (!isAlreadyPublished) {
-                const confirmPublish = confirm(
-                    `Đã công nhận hoạt động "${proposal.activity_title}"!\nBạn có muốn đưa hoạt động này lên Trang chủ ngay không?`
-                );
-
-                if (confirmPublish) {
-                    await handlePublishToHome(proposal);
-                }
+                await handlePublishToHome(proposal, true);
+                alert(`Đã công nhận và tự động đưa hoạt động "${proposal.activity_title}" ra ngoài Trang chủ thành công!`);
             }
         }
     };
@@ -949,7 +948,6 @@ export default function SummaryPage() {
                                         badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
                                     };
 
-                                    // Kiểm tra xem đề xuất này đã được đưa ra Trang chủ hay chưa
                                     const isPublished = officialActivities.some(
                                         (act) => act.proposal_id === prop.id || act.title === prop.activity_title
                                     );
@@ -1056,7 +1054,6 @@ export default function SummaryPage() {
                                                         <span>Xóa</span>
                                                     </button>
 
-                                                    {/* Kiểm tra: nếu đã đưa ra Trang chủ thì hiện huy hiệu, ngược lại hiện nút đăng */}
                                                     {isPublished ? (
                                                         <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
                                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
