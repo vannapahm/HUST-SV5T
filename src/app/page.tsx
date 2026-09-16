@@ -270,7 +270,7 @@ export default function HomePage() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                 >
-                  Tất cả ({activities.length})
+                  Tất cả ({activitiesInYear.length})
                 </button>
                 <button
                   onClick={() => setSelectedStatus('APPROVED')}
