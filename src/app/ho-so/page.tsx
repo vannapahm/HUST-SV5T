@@ -348,53 +348,52 @@ export default function StudentPortfolioPage() {
     };
 
     const fetchAcademicInfo = async (mssv: string, year: string = academicYear) => {
-        // 1. Thử tìm dữ liệu học vụ của năm học đang được chọn
-        const { data } = await supabase
+        // 1. Lấy dữ liệu học vụ của NĂM HIỆN TẠI (nếu có)
+        const { data: currentData } = await supabase
             .from('student_academic_info')
             .select('*')
             .eq('student_id', mssv.trim())
             .eq('academic_year', year)
             .maybeSingle();
 
-        if (data) {
-            // Nếu đã khai báo cho năm nay rồi -> Nạp toàn bộ dữ liệu
-            setAcademicData(data);
-        } else {
-            // 2. Nếu năm nay chưa khai báo -> Tìm hồ sơ của năm gần nhất để "kế thừa" thông tin cá nhân
-            const { data: latestData } = await supabase
-                .from('student_academic_info')
-                .select('full_name, gender, birth_year, ethnicity, class_name, faculty_name, email_sis, phone')
-                .eq('student_id', mssv.trim())
-                .order('academic_year', { ascending: false }) // Ưu tiên lấy dữ liệu của năm mới nhất
-                .limit(1)
-                .maybeSingle();
+        // 2. Lấy dữ liệu của LẦN LƯU GẦN NHẤT (bất kể năm nào) để làm "ngân hàng" thông tin cá nhân
+        const { data: latestData } = await supabase
+            .from('student_academic_info')
+            .select('*')
+            .eq('student_id', mssv.trim())
+            .order('updated_at', { ascending: false }) // Ưu tiên cái mới update nhất
+            .limit(1)
+            .maybeSingle();
 
-            // 3. Đổ dữ liệu cá nhân dùng chung vào form, reset trắng các ô điểm số
-            setAcademicData((prev) => ({
-                ...prev,
-                student_id: mssv,
-                full_name: latestData?.full_name || '',
-                gender: latestData?.gender || 'Nam',
-                birth_year: latestData?.birth_year || '',
-                ethnicity: latestData?.ethnicity || 'Kinh',
-                class_name: latestData?.class_name || '',
-                faculty_name: latestData?.faculty_name || 'Trường Công nghệ Thông tin và Truyền thông',
-                email_sis: latestData?.email_sis || '',
-                phone: latestData?.phone || '',
-                student_year: '',
-                position: 'Không',
-                union_status: 'Đoàn viên',
-                drl_sem1: 0,
-                drl_sem2: 0,
-                gpa_sem1: 0,
-                credits_sem1: 0,
-                gpa_sem2: 0,
-                credits_sem2: 0,
-                physical_education_status: 'Hoàn thành đủ 05 học phần GDTC',
-                foreign_language_status: '',
-                other_achievements: ''
-            }));
-        }
+        // 3. Trộn dữ liệu: Ưu tiên năm hiện tại, ô nào trống thì lập tức mượn của lần lưu gần nhất
+        setAcademicData((prev) => ({
+            ...prev,
+            student_id: mssv,
+
+            // --- CÁC THÔNG TIN CÁ NHÂN (LUÔN TỰ ĐỘNG ĐIỀN CHÉO NĂM NẾU TRỐNG) ---
+            full_name: currentData?.full_name || latestData?.full_name || '',
+            gender: currentData?.gender || latestData?.gender || 'Nam',
+            birth_year: currentData?.birth_year || latestData?.birth_year || '',
+            ethnicity: currentData?.ethnicity || latestData?.ethnicity || 'Kinh',
+            class_name: currentData?.class_name || latestData?.class_name || '',
+            faculty_name: currentData?.faculty_name || latestData?.faculty_name || 'Trường Công nghệ Thông tin và Truyền thông',
+            email_sis: currentData?.email_sis || latestData?.email_sis || '',
+            phone: currentData?.phone || latestData?.phone || '',
+
+            // --- CÁC THÔNG TIN BIẾN ĐỘNG (Chỉ lấy đúng của năm hiện tại) ---
+            student_year: currentData?.student_year || '',
+            position: currentData?.position || '',
+            union_status: currentData?.union_status || 'Đoàn viên',
+            drl_sem1: currentData?.drl_sem1 || 0,
+            drl_sem2: currentData?.drl_sem2 || 0,
+            gpa_sem1: currentData?.gpa_sem1 || 0,
+            credits_sem1: currentData?.credits_sem1 || 0,
+            gpa_sem2: currentData?.gpa_sem2 || 0,
+            credits_sem2: currentData?.credits_sem2 || 0,
+            physical_education_status: currentData?.physical_education_status || 'Hoàn thành đủ 05 học phần GDTC',
+            foreign_language_status: currentData?.foreign_language_status || '',
+            other_achievements: currentData?.other_achievements || ''
+        }));
     };
 
     useEffect(() => {
