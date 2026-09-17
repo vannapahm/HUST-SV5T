@@ -231,14 +231,6 @@ export default function StudentPortfolioPage() {
 
     const [exportingDocx, setExportingDocx] = useState(false);
 
-    // Khôi phục năm học đã chọn trước đó khi F5 (chỉ ở trang Hồ sơ)
-    useEffect(() => {
-        const savedYear = localStorage.getItem('sv5t_ho_so_year');
-        if (savedYear) {
-            setAcademicYear(savedYear);
-        }
-    }, []);
-
     const handleExportDocx = async () => {
         if (!academicData.full_name || !academicData.class_name) {
             alert('Vui lòng bấm vào "Khai báo Báo cáo thành tích" để điền Họ tên và Lớp trước khi xuất file!');
@@ -286,9 +278,6 @@ export default function StudentPortfolioPage() {
                         setCurrentMssv(mssv);
                         setSavedPin(pin);
                         setIsLoggedIn(true);
-                        fetchRecords(mssv);
-                        fetchAcademicInfo(mssv);
-                        fetchMyProposals(mssv);
                     } else {
                         localStorage.removeItem('sv5t_student_session');
                     }
