@@ -337,6 +337,7 @@ export default function StudentPortfolioPage() {
     };
 
     const fetchAcademicInfo = async (mssv: string, year: string = academicYear) => {
+        // 1. Thử tìm dữ liệu học vụ của năm học đang được chọn
         const { data } = await supabase
             .from('student_academic_info')
             .select('*')
@@ -345,18 +346,44 @@ export default function StudentPortfolioPage() {
             .maybeSingle();
 
         if (data) {
+            // Nếu đã khai báo cho năm nay rồi -> Nạp toàn bộ dữ liệu
             setAcademicData(data);
         } else {
+            // 2. Nếu năm nay chưa khai báo -> Tìm hồ sơ của năm gần nhất để "kế thừa" thông tin cá nhân
+            const { data: latestData } = await supabase
+                .from('student_academic_info')
+                .select('full_name, gender, birth_year, ethnicity, class_name, faculty_name, email_sis, phone')
+                .eq('student_id', mssv.trim())
+                .order('academic_year', { ascending: false }) // Ưu tiên lấy dữ liệu của năm mới nhất
+                .limit(1)
+                .maybeSingle();
+
+            // 3. Đổ dữ liệu cá nhân dùng chung vào form, reset trắng các ô điểm số
             setAcademicData((prev) => ({
                 ...prev,
                 student_id: mssv,
-                email_sis: '',
-                drl_sem1: '',
-                drl_sem2: '',
-                gpa_sem1: '',
-                credits_sem1: '',
-                gpa_sem2: '',
-                credits_sem2: '',
+                // --- CÁC TRƯỜNG KẾ THỪA TỪ NĂM CŨ (vẫn cho phép sửa) ---
+                full_name: latestData?.full_name || '',
+                gender: latestData?.gender || 'Nam',
+                birth_year: latestData?.birth_year || '',
+                ethnicity: latestData?.ethnicity || 'Kinh',
+                class_name: latestData?.class_name || '',
+                faculty_name: latestData?.faculty_name || 'Trường Công nghệ Thông tin và Truyền thông',
+                email_sis: latestData?.email_sis || '',
+                phone: latestData?.phone || '',
+
+                // --- CÁC TRƯỜNG RESET TRỐNG (vì thay đổi theo từng năm) ---
+                student_year: '', // Sinh viên chuyển năm nên để trống để tự gõ lại (ví dụ 2 -> 3)
+                position: 'Không',
+                union_status: 'Đoàn viên',
+                drl_sem1: 0,
+                drl_sem2: 0,
+                gpa_sem1: 0,
+                credits_sem1: 0,
+                gpa_sem2: 0,
+                credits_sem2: 0,
+                physical_education_status: 'Hoàn thành đủ 05 học phần GDTC',
+                foreign_language_status: '',
                 other_achievements: ''
             }));
         }
@@ -1882,8 +1909,8 @@ export default function StudentPortfolioPage() {
                                                                             setIsActDropdownOpen(false); // Đóng menu
                                                                         }}
                                                                         className={`px-3 py-2 cursor-pointer text-xs transition-colors ${selectedSystemActId === String(act.id)
-                                                                                ? 'bg-blue-50 text-blue-700 font-semibold'
-                                                                                : 'hover:bg-slate-50 text-slate-700'
+                                                                            ? 'bg-blue-50 text-blue-700 font-semibold'
+                                                                            : 'hover:bg-slate-50 text-slate-700'
                                                                             }`}
                                                                     >
                                                                         {act.title}
