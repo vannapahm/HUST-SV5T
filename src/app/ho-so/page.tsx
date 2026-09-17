@@ -7,7 +7,7 @@ import {
     ArrowLeft, PlusCircle, Trash2, Calendar, Award,
     ExternalLink, User, Sparkles, X, LogOut, ArrowRight,
     CheckCircle2, Clock, AlertCircle, Lock, KeyRound, FileSpreadsheet, Save, Calculator, Info,
-    Send, Pencil, MapPin, Building2, Check, Download, Search
+    Send, Pencil, MapPin, Building2, Download, Search
 } from 'lucide-react';
 import { CRITERIA_TREE } from '@/data/criteria';
 import { generateDocxReport } from '@/lib/exportDocx';
@@ -208,6 +208,9 @@ export default function StudentPortfolioPage() {
     const [selectedSystemActId, setSelectedSystemActId] = useState<string>('');
     const [systemProofUrl, setSystemProofUrl] = useState<string>('');
 
+    // State chống double-click khi lưu hoạt động
+    const [isAddingAct, setIsAddingAct] = useState(false);
+
     // Tìm kiếm hoạt động (Searchable Dropdown)
     const [actSearchTerm, setActSearchTerm] = useState('');
     const [isActDropdownOpen, setIsActDropdownOpen] = useState(false);
@@ -222,6 +225,14 @@ export default function StudentPortfolioPage() {
     });
 
     const [exportingDocx, setExportingDocx] = useState(false);
+
+    // Khôi phục năm học đã chọn trước đó khi F5 (chỉ ở trang Hồ sơ)
+    useEffect(() => {
+        const savedYear = localStorage.getItem('sv5t_ho_so_year');
+        if (savedYear) {
+            setAcademicYear(savedYear);
+        }
+    }, []);
 
     const handleExportDocx = async () => {
         if (!academicData.full_name || !academicData.class_name) {
@@ -362,7 +373,6 @@ export default function StudentPortfolioPage() {
             setAcademicData((prev) => ({
                 ...prev,
                 student_id: mssv,
-                // --- CÁC TRƯỜNG KẾ THỪA TỪ NĂM CŨ (vẫn cho phép sửa) ---
                 full_name: latestData?.full_name || '',
                 gender: latestData?.gender || 'Nam',
                 birth_year: latestData?.birth_year || '',
@@ -371,9 +381,7 @@ export default function StudentPortfolioPage() {
                 faculty_name: latestData?.faculty_name || 'Trường Công nghệ Thông tin và Truyền thông',
                 email_sis: latestData?.email_sis || '',
                 phone: latestData?.phone || '',
-
-                // --- CÁC TRƯỜNG RESET TRỐNG (vì thay đổi theo từng năm) ---
-                student_year: '', // Sinh viên chuyển năm nên để trống để tự gõ lại (ví dụ 2 -> 3)
+                student_year: '',
                 position: 'Không',
                 union_status: 'Đoàn viên',
                 drl_sem1: 0,
@@ -567,68 +575,76 @@ export default function StudentPortfolioPage() {
 
     const handleAddActivity = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentMssv) return;
+        // Chặn ngay lập tức nếu đang trong quá trình xử lý lưu (tránh double click)
+        if (!currentMssv || isAddingAct) return;
 
-        let newRecordPayload: any = null;
+        setIsAddingAct(true); // Bắt đầu khóa nút
 
-        if (addMode === 'SYSTEM') {
-            const act = systemActivities.find((a) => String(a.id) === selectedSystemActId);
-            if (!act) {
-                alert('Vui lòng chọn một hoạt động trong danh sách!');
-                return;
+        try {
+            let newRecordPayload: any = null;
+
+            if (addMode === 'SYSTEM') {
+                const act = systemActivities.find((a) => String(a.id) === selectedSystemActId);
+                if (!act) {
+                    alert('Vui lòng chọn một hoạt động trong danh sách!');
+                    return;
+                }
+                newRecordPayload = {
+                    student_id: currentMssv,
+                    academic_year: academicYear,
+                    activity_id: String(act.id),
+                    activity_title: act.title,
+                    organizer: act.organizer,
+                    target_standard: act.supported_standard,
+                    criteria_detail: act.criteria_detail || 'Tham gia hoạt động được công nhận',
+                    completion_condition: act.completion_condition || null,
+                    participation_date: act.start_date ? act.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
+                    proof_url: systemProofUrl.trim() || '',
+                    status: act.status || 'APPROVED',
+                };
+            } else {
+                if (!customForm.activity_title || !customForm.criteria_detail) {
+                    alert('Vui lòng nhập tên hoạt động và tiêu chí cụ thể!');
+                    return;
+                }
+                newRecordPayload = {
+                    student_id: currentMssv,
+                    academic_year: academicYear,
+                    activity_id: null,
+                    activity_title: customForm.activity_title,
+                    organizer: customForm.organizer || 'Ban tổ chức',
+                    target_standard: customForm.target_standard,
+                    criteria_detail: customForm.criteria_detail,
+                    completion_condition: null,
+                    participation_date: customForm.participation_date,
+                    proof_url: customForm.proof_url,
+                    status: 'PENDING',
+                };
             }
-            newRecordPayload = {
-                student_id: currentMssv,
-                academic_year: academicYear,
-                activity_id: String(act.id),
-                activity_title: act.title,
-                organizer: act.organizer,
-                target_standard: act.supported_standard,
-                criteria_detail: act.criteria_detail || 'Tham gia hoạt động được công nhận',
-                completion_condition: act.completion_condition || null,
-                participation_date: act.start_date ? act.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
-                proof_url: systemProofUrl.trim() || '',
-                status: act.status || 'APPROVED',
-            };
-        } else {
-            if (!customForm.activity_title || !customForm.criteria_detail) {
-                alert('Vui lòng nhập tên hoạt động và tiêu chí cụ thể!');
-                return;
+
+            const { data, error } = await supabase.from('student_activities').insert([newRecordPayload]).select();
+
+            if (error) {
+                alert('Không thể lưu hoạt động: ' + error.message);
+            } else if (data) {
+                setRecords([data[0] as StudentRecord, ...records]);
+                setIsModalOpen(false);
+                setSelectedSystemActId('');
+                setSystemProofUrl('');
+                setActSearchTerm(''); // Xóa kết quả tìm kiếm cho lần sau
+                setCustomForm({
+                    activity_title: '',
+                    organizer: '',
+                    target_standard: 'DAO_DUC',
+                    criteria_detail: '',
+                    participation_date: new Date().toISOString().split('T')[0],
+                    proof_url: '',
+                });
+                alert('Đã ghi nhận hoạt động thành công vào hồ sơ MSSV: ' + currentMssv);
             }
-            newRecordPayload = {
-                student_id: currentMssv,
-                academic_year: academicYear,
-                activity_id: null,
-                activity_title: customForm.activity_title,
-                organizer: customForm.organizer || 'Ban tổ chức',
-                target_standard: customForm.target_standard,
-                criteria_detail: customForm.criteria_detail,
-                completion_condition: null,
-                participation_date: customForm.participation_date,
-                proof_url: customForm.proof_url,
-                status: 'PENDING',
-            };
-        }
-
-        const { data, error } = await supabase.from('student_activities').insert([newRecordPayload]).select();
-
-        if (error) {
-            alert('Không thể lưu hoạt động: ' + error.message);
-        } else if (data) {
-            setRecords([data[0] as StudentRecord, ...records]);
-            setIsModalOpen(false);
-            setSelectedSystemActId('');
-            setSystemProofUrl('');
-            setActSearchTerm(''); // Xóa kết quả tìm kiếm cho lần sau
-            setCustomForm({
-                activity_title: '',
-                organizer: '',
-                target_standard: 'DAO_DUC',
-                criteria_detail: '',
-                participation_date: new Date().toISOString().split('T')[0],
-                proof_url: '',
-            });
-            alert('Đã ghi nhận hoạt động thành công vào hồ sơ MSSV: ' + currentMssv);
+        } finally {
+            // Luôn mở khóa nút dù thao tác thành công hay thất bại
+            setIsAddingAct(false);
         }
     };
 
@@ -887,7 +903,11 @@ export default function StudentPortfolioPage() {
                                     <span className="text-xs font-medium text-slate-500">Năm học xét duyệt:</span>
                                     <select
                                         value={academicYear}
-                                        onChange={(e) => setAcademicYear(e.target.value)}
+                                        onChange={(e) => {
+                                            setAcademicYear(e.target.value);
+                                            // Lưu lựa chọn này lại để F5 không bị mất
+                                            localStorage.setItem('sv5t_ho_so_year', e.target.value);
+                                        }}
                                         className="text-xs font-bold text-[#0C5776] bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 focus:outline-none focus:border-[#0C5776] cursor-pointer"
                                     >
                                         <option value="2024-2025">Năm học 2024 – 2025</option>
@@ -1194,7 +1214,7 @@ export default function StudentPortfolioPage() {
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white">
                             <div>
                                 <h3 className="text-base font-bold text-[#001C44]">Chỉnh sửa đề xuất hoạt động</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Cập nhật thông tin trước khi BTK tiến hành xét duyệt.</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Cập nhật thông tin trước khi Ban tổ chức tiến hành xét duyệt.</p>
                             </div>
                             <button
                                 type="button"
@@ -1328,6 +1348,7 @@ export default function StudentPortfolioPage() {
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:border-[#0C5776]"
                                         required
                                     >
+                                        <option value="">-- Chọn tiêu chí cụ thể tương ứng --</option>
                                         {CRITERIA_TREE[editingProposal.target_standard]?.items.map((item, idx) => (
                                             <option key={idx} value={item.full}>
                                                 {item.display}
@@ -2060,9 +2081,10 @@ export default function StudentPortfolioPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 bg-[#0C5776] text-white font-semibold rounded-lg hover:bg-[#001C44] transition-colors text-xs shadow-sm"
+                                    disabled={isAddingAct}
+                                    className="px-5 py-2 bg-[#0C5776] text-white font-semibold rounded-lg hover:bg-[#001C44] transition-colors text-xs shadow-sm disabled:opacity-50"
                                 >
-                                    Lưu vào hồ sơ
+                                    {isAddingAct ? 'Đang xử lý...' : 'Lưu vào hồ sơ'}
                                 </button>
                             </div>
                         </form>
