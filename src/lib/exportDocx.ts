@@ -63,8 +63,14 @@ export const generateDocxReport = async ({
             .join('\n\n'); // Xuống dòng giữa các hoạt động
     };
 
+    // Trích xuất năm bắt đầu (Ví dụ: "2025-2026" -> "2025")
+    const startYear = academicYear.split('-')[0];
+
     // 3. Chuẩn bị dữ liệu điền vào các thẻ biến {...}
     const dataToFill = {
+        // Tự động sinh tên học kỳ (Ví dụ: 2025.1, 2025.2)
+        ky_1: `${startYear}.1`,
+        ky_2: `${startYear}.2`,
         // Thông tin cá nhân
         ho_ten: academicData.full_name || '',
         mssv: academicData.student_id || '',
