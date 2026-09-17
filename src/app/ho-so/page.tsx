@@ -139,7 +139,12 @@ const formatDatetimeLocal = (isoStr?: string | null) => {
 export default function StudentPortfolioPage() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [loadingAuth, setLoadingAuth] = useState<boolean>(true);
-    const [academicYear, setAcademicYear] = useState<string>(getCurrentAcademicYear);
+    const [academicYear, setAcademicYear] = useState<string>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('sv5t_ho_so_year') || getCurrentAcademicYear();
+        }
+        return getCurrentAcademicYear();
+    });
     const startYear = academicYear.split('-')[0];
 
     // Tab hiển thị: Hoạt động tích lũy (RECORDS) hoặc Đề xuất của tôi (PROPOSALS)
