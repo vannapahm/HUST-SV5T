@@ -575,6 +575,28 @@ export default function StudentPortfolioPage() {
         // Chặn ngay lập tức nếu đang trong quá trình xử lý lưu (tránh double click)
         if (!currentMssv || isAddingAct) return;
 
+        // ========================================================
+        // BỘ LỌC KIỂM TRA TRÙNG LẶP (DUPLICATE CHECKER)
+        // ========================================================
+        if (addMode === 'SYSTEM') {
+            // Kiểm tra trùng khớp ID hoạt động
+            const isDuplicate = records.some(r => String(r.activity_id) === selectedSystemActId);
+            if (isDuplicate) {
+                alert('⚠️ Hoạt động này đã tồn tại trong hồ sơ của bạn rồi. Không thể thêm trùng lặp!');
+                return;
+            }
+        } else {
+            // Kiểm tra trùng khớp Tên hoạt động tự nhập (không phân biệt hoa/thường)
+            const isDuplicateName = records.some(r =>
+                r.activity_title.trim().toLowerCase() === customForm.activity_title.trim().toLowerCase()
+            );
+            if (isDuplicateName) {
+                const confirmAdd = confirm('⚠️ Hồ sơ của bạn đã có một hoạt động với tên tương tự.\n\nBạn có chắc chắn đây là một hoạt động mới và muốn thêm tiếp không?');
+                if (!confirmAdd) return; // Nếu chọn Cancel thì dừng lại
+            }
+        }
+        // ========================================================
+
         setIsAddingAct(true); // Bắt đầu khóa nút
 
         try {
