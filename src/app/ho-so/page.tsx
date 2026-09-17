@@ -1194,7 +1194,7 @@ export default function StudentPortfolioPage() {
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white">
                             <div>
                                 <h3 className="text-base font-bold text-[#001C44]">Chỉnh sửa đề xuất hoạt động</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Cập nhật thôngப்பி tin trước khi Ban tổ chức tiến hành xét duyệt.</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Cập nhật thông tin trước khi BTK tiến hành xét duyệt.</p>
                             </div>
                             <button
                                 type="button"
