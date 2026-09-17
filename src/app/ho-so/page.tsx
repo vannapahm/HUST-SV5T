@@ -403,7 +403,7 @@ export default function StudentPortfolioPage() {
             fetchAcademicInfo(currentMssv, academicYear);
             fetchMyProposals(currentMssv);
         }
-    }, [academicYear]);
+    }, [isLoggedIn, currentMssv, academicYear]);
 
     const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -470,9 +470,6 @@ export default function StudentPortfolioPage() {
         setCurrentMssv(mssv);
         setSavedPin(pin);
         setIsLoggedIn(true);
-        fetchRecords(mssv);
-        fetchAcademicInfo(mssv);
-        fetchMyProposals(mssv);
     };
 
     const handleLogout = () => {
