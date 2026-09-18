@@ -39,28 +39,28 @@ export const generateDocxReport = async ({
         linebreaks: true,
     });
 
-    // 2. Hàm gom nhóm hoạt động, tự động đánh STT bắt đầu từ startIdx và IN ĐẬM số thứ tự
+    // 2. Hàm gom nhóm hoạt động, tách riêng STT và Nội dung để in đậm từng phần trong Word
     const formatActivitiesBlock = (standardKey: string, startIdx: number = 1) => {
         const filtered = records.filter(
             (r) => r.target_standard === standardKey && r.status === 'APPROVED'
         );
 
         if (filtered.length === 0) {
-            return '';
+            return []; // Trả về mảng rỗng để không in ra gì nếu không có hoạt động
         }
 
-        return filtered
-            .map((r, index) => {
-                const currentNum = startIdx + index;
-                // Định dạng chuẩn: In đậm số thứ tự, nội dung phía sau viết thường / bình thường
-                // docxtemplater hỗ trợ cú pháp XML hoặc xuống dòng bằng ký tự xuống dòng thuần túy
-                const title = r.activity_title || '';
-                const detail = r.criteria_detail ? ` - ${r.criteria_detail}` : '';
-                const proof = r.proof_url ? ` (${r.proof_url})` : '';
+        return filtered.map((r, index) => {
+            const currentNum = startIdx + index;
+            const title = r.activity_title || '';
+            const detail = r.criteria_detail ? ` - ${r.criteria_detail}` : '';
+            const proof = r.proof_url ? ` (${r.proof_url})` : '';
 
-                return `${currentNum}. ${title}${detail}${proof}`;
-            })
-            .join('\n\n'); // Xuống dòng giữa các hoạt động
+            // Tách riêng số thứ tự và nội dung
+            return {
+                stt: `${currentNum}.`,
+                noidung: ` ${title}${detail}${proof}` // Thêm dấu cách ở đầu để cách số ra 1 nhịp
+            };
+        });
     };
 
     // Trích xuất năm bắt đầu (Ví dụ: "2025-2026" -> "2025")
